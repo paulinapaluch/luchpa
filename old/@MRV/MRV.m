@@ -1,5 +1,5 @@
-classdef MRViewer3Dt < handle
-    %MRViewer3Dt
+classdef MRV < handle
+    %MRV
     %
     % Konrad Werys, Feb 2016
     % konradwerys@gmail.com
@@ -11,6 +11,7 @@ classdef MRViewer3Dt < handle
     % - "OverlayImg"    by "Jochen Rau",       FileExchange ID: #26790
     
     properties                                                  % These properties are public
+        MRData      = [];
         aspectRatio = [];                                       % data aspect ratio
         backVol     = [];                                       % Background volume
         backMap     = [];                                       % Color map for the background
@@ -23,14 +24,17 @@ classdef MRViewer3Dt < handle
     end
     properties (SetAccess = private, Hidden = true)             % These properties are private.
         volumeSize   = [];                                      % size of the volume
+        overDims     = [];
         currentPoint = [];                                      % current point shown
         currentTime  = [];
+        currentDim   = [];
         figHandle    = [];
         axesHandles  = [];                                      % handles to the axes
         imgsHandles  = [];                                      % handles to the images
         lineHandles  = [];                                      % handles to the lines
         cursHandles  = [];                                      % handles to the cursor tool tips
         colorBarFig  = [];                                      % handle to the optional colorbar figure
+        
     end
     
     methods(Static)
@@ -134,7 +138,7 @@ classdef MRViewer3Dt < handle
             p.addParameter('backRange',MRViewer3Dt.getRange(obj.backVol),@(x)length(x)==2&x(1)<x(2));
             p.addParameter('overRange',MRViewer3Dt.getRange(obj.overVol),@(x)length(x)==2&x(1)<x(2));
             p.addParameter('backMap',gray(256),@(x)ismatrix(x)&size(x,2)==3)
-            p.addParameter('overMap',jet(256),@(x)ismatrix(x)&size(x,2)==3)
+            p.addParameter('overMap',hot(256),@(x)ismatrix(x)&size(x,2)==3)
             p.addParameter('maskRange',[],@(x)length(x)==2&x(1)<x(2));
             p.addParameter('alpha',0.4,@(x)x>=0&x<=1);
             p.addParameter('aspectRatio',[1 1 1],@(x)length(x)==3);
@@ -146,44 +150,43 @@ classdef MRViewer3Dt < handle
             obj.alpha       = p.Results.alpha;                  % ...
             obj.backMap     = p.Results.backMap;                % ...
             obj.overMap     = p.Results.overMap;                % ...
-            obj.aspectRatio = p.Results.aspectRatio;            % ...
-            %             if p.Results.colorBar, showColorBar(obj); end       % When the user wants a colorbar, show it.
+            %if p.Results.colorBar, showColorBar(obj); end       % When the user wants a colorbar, show it.
         end
     end
     
     methods
-        function obj = MRViewer3Dt(backVol,overVol,varargin)    % Initial start of this function, show the images, provide the class handle.
-            if nargin==1, overVol = []; end                     % Only one input variable? -> overVol is empty.
-            if isscalar(backVol)                                % If the provided input is not an image, but a scalar.
-                error('Images should be 2- or 3-Dimensional');  % Error.
-            end
-            if ismatrix(backVol)                                % If an image (2D) is provided,
-                backVol = permute(backVol,[3,1,2]);             % make it a volume (3D)
-            end
-            if ismatrix(overVol)==2                             % If an image (2D) is provided,
-                overVol = permute(overVol,[3,1,2]);             % make it a volume (3D)
-            end
-            vS = size(backVol);                                 % The size of the volume.
-            obj.currentPoint = round(vS/2);                     % Current point is in the center of the volume.
-            if ~isempty(overVol)                                % The overlay volume may be empty,
-                if ~all(vS == size(overVol))                    % Otherwise it should be the same size as the background.
-                    error('Overlay must be the same size');     % Throw error if not.
+        function obj = MRV(varargin)
+        
+            %%%% MRData
+            if isa(varargin{1},'MRData')
+                M = varargin{1};
+                obj.backVol = M.(M.allowedImages{1,1});
+                if ~isempty(M.(M.mrconfig{2,2}))
+                    obj.overVol = M.(M.mrconfig{2,2}).(M.allowedOverlays{1,1})(:,:,:,:,1);
+                    obj.overDims = M.allowedOverlays{1,3};
                 end
+                vS = size(obj.backVol);
+                obj.currentPoint = round(vS/2);
+                obj.volumeSize = vS;
+                obj.currentTime = 1;
+                obj.currentDim = 1;
+                obj.MRData = M;
+                
+                if nargin <= 1                                      % If only the volume(s) are given,
+                    MRV.parseInputs({},obj);              % Set default parameters for the display settings
+                else                                                % Otherwise...
+                    MRV.parseInputs(varargin,obj);        % parse the additional input.
+                end
+                
+                obj.aspectRatio = M.aspectRatio;
+            else
+                error('Wrong input')
             end
-            if length(vS)==3, vS(4)=1;end
             
-            obj.volumeSize = vS;                                % Set the the volume size, this is from now on read only.
-            obj.backVol = backVol;                              % Set the background volume
-            obj.overVol = overVol;                              % Set the overlay volume.
-            obj.currentTime = 1;
+            %%%% one/two 2d/3d/4d matrices
+            % TBI based on ovelayVolume
             
-            if nargin <= 2                                      % If only the volume(s) are given,
-                MRViewer3Dt.parseInputs({},obj);              % Set default parameters for the display settings
-            else                                                % Otherwise...
-                MRViewer3Dt.parseInputs(varargin,obj);        % parse the additional input.
-            end
-            
-            obj.figHandle = figure;                          % Make a figure, and save its handle.
+            obj.figHandle = figure('Menubar','none');           % Make a figure, and save its handle.
             set(obj.figHandle,'units','normalized','outerposition',[0 0 1 1]); %position the axis in the figure
             obj.cursHandles=datacursormode(obj.figHandle);      % Get the data cursor mode handle
             
@@ -223,10 +226,12 @@ classdef MRViewer3Dt < handle
             hold off
             
             set(obj.figHandle,'WindowButtonDownFcn',...           % set kryboard control
-                {@MRViewer3Dt.figureClick,obj});
+                {@MRV.figureClick,obj});
             set(obj.figHandle,'WindowKeyPressFcn',...           % set kryboard control
-                {@MRViewer3Dt.figureKey,obj});
+                {@MRV.figureKey,obj});
+            
             setAspectRatio(obj);
+            updateAxesPostion(obj,1);
             updateImages(obj);                                  % Update the images.
         end
         
@@ -235,7 +240,7 @@ classdef MRViewer3Dt < handle
                 axes = obj.axesHandles;                         % update them all.
             end
             for loop = 1:length(axes)                           % Loop through the figure handles that should be updated.
-                IMG=MRViewer3Dt.provideImage(axes(loop),obj);   % Get the right image,
+                IMG=MRV.provideImage(axes(loop),obj);   % Get the right image,
                 try set(obj.imgsHandles(axes(loop) == ...       % And try to show it
                         obj.axesHandles),'CData',IMG); end      % ... (The 'try' is there in case a window was closed by the user)
             end
@@ -291,7 +296,7 @@ classdef MRViewer3Dt < handle
             end
             obj.overVol = Value;                                % Set the overlay
             if isempty(obj.overRange)                           % If the overlay range was previously empty, ...
-                obj.overRange = MRViewer3Dt.getRange(Value);  % Get the defaults.
+                obj.overRange = MRV.getRange(Value);  % Get the defaults.
                 showColorBar(obj,'UpdateIfExist');              % If there is a colorbar, update it.
             end
             updateImages(obj);                                  % Update the images.
@@ -300,22 +305,21 @@ classdef MRViewer3Dt < handle
         function setAspectRatio(obj, Value)                     % Set the aspect ratio
             if exist('Value','var')
                 if length(Value)==2
-                    Value = [1 Values];
+                    Value = [1 Values]; 
                 end         % In this case it is probably a 2D image, make it three values.
-                if length(Value)==3
+                if length(Value)==3 
                     obj.aspectRatio = Value;                        % Set the aspect ratio in the object.
                 end
             else
                 Value = obj.aspectRatio;
             end
-            
+
             set(obj.axesHandles(1),...              % Find all objects in figure 1 ...
                 'DataAspectRatio',[Value(3) Value(2) 1]);   % and set the aspect ratio.
             set(obj.axesHandles(2),...              % Find all objects in figure 2
                 'DataAspectRatio',[Value(3) Value(1) 1]);   % and set the aspect ratio.
             set(obj.axesHandles(3),...              % Find all objects in figure 3
                 'DataAspectRatio',[Value(1) Value(2) 1]);   % and set the aspect ratio.
-            updateAxesPostion(obj,1);
         end
         
         function setBackRange(obj, Value)                       % Set the background color range
@@ -338,6 +342,4 @@ classdef MRViewer3Dt < handle
             end
         end
     end
-    
 end
-

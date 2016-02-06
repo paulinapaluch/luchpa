@@ -48,7 +48,7 @@ classdef MRDispField  < handle
         %%% --------------------- OTHER METHODS --------------------- %%%
         
         function out = magBack(DF),out=sqrt(sum(DF.back.^2,5));end
-        function out = magFrow(DF),out=sqrt(sum(DF.forw.^2,5));end
+        function out = magForw(DF),out=sqrt(sum(DF.forw.^2,5));end
         function out = magComb(DF),out=sqrt(sum(DF.getComb.^2,5));end
         
         function DF = calcDispField(DF,MRData,type)
@@ -118,15 +118,15 @@ classdef MRDispField  < handle
             fullPath = fullfile(DF.loadDirPath,[type,'.mat']);
             % check if already was calculated. If so, load
             if exist(fullPath,'file')
-                fprintf('Loading displacement field: %s',type);
+                fprintf('Loading displacement field: %s\n',type);
                 DF=DF.loadDispField(MRData,type);
             else
-                fprintf('Calculating displacement field: %s',type);
+                fprintf('Calculating displacement field: %s\n?',type);
                 DF=DF.calcDispField(MRData,type);
             end
         end
         
-        function back = getDispFieldback(DF,MRData)
+%         function back = getDispFieldback(DF,MRData)
 %             emptyBack = isempty(DF.back);
 %             emptyType = isempty(DF.type);
 % 
@@ -136,7 +136,7 @@ classdef MRDispField  < handle
 %                 DF.update();
 %             elseif emptyBack && nargin ==2 && emptyType
 %             back = DF.back(MRData);
-        end
+%         end
         
 %         function back = getDispFieldforw(DF)
 %             if isempty(DF.forw)

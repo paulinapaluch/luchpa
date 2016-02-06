@@ -1,6 +1,9 @@
 classdef (Abstract) MRData < matlab.mixin.SetGet
-    %UNTITLED Summary of this class goes here
-    %   Detailed explanation goes here
+    %MRData is an abstract class, main purpose of its children is to store
+    %   data imported from dicoms.
+    %
+    % Konrad Werys, Feb 2016
+    % mrkonrad.github.io
     
     properties (Abstract)
         savePath;  % where the object will be saved. Updated on load, may be freely changed
@@ -10,9 +13,9 @@ classdef (Abstract) MRData < matlab.mixin.SetGet
         loadPath = '';	% updated on loading previously saved matlab data
         dcmsPath = '';	% updated in loading new data from dicoms
         
-        data     =[];   % modified, currently used data. Modified for example for breathing motion corrected
-        dataIso  =[];   % istropic data calculated based on data
-        dataRaw  =[];   % data from dicoms
+        data     = [];  % modified, currently used data. Modified for example for breathing motion corrected
+        dataIso  = [];  % istropic data calculated based on data
+        dataRaw  = [];  % data from dicoms
         dcmTags         % dicoms tags, kept here in case they are needed one day
         
         %%% properties taken from dcmTags
