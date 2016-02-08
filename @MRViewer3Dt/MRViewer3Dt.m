@@ -21,8 +21,10 @@ classdef MRViewer3Dt < handle
         maskRange   = [];                                       % Overlay will not be shown for values in the maskRange [lower, upper]
         alpha       = [];                                       % Transparency value [0<=alpha<=1]
     end
-    properties (SetAccess = private, Hidden = true)             % These properties are private.
+    properties (SetAccess = protected, Hidden = true)
         volumeSize   = [];                                      % size of the volume
+    end
+    properties (SetAccess = private, Hidden = true)             % These properties are private.
         currentPoint = [];                                      % current point shown
         currentTime  = [];
         figHandle    = [];
@@ -30,7 +32,9 @@ classdef MRViewer3Dt < handle
         imgsHandles  = [];                                      % handles to the images
         lineHandles  = [];                                      % handles to the lines
         cursHandles  = [];                                      % handles to the cursor tool tips
+        textHandles  = [];
         colorBarFig  = [];                                      % handle to the optional colorbar figure
+        
     end
     
     methods(Static)
@@ -48,11 +52,12 @@ classdef MRViewer3Dt < handle
                     obj.currentTime = mod(obj.currentTime,obj.volumeSize(4))+1;
                 case {'leftarrow'}                              % left - prev time
                     obj.currentTime = mod(obj.currentTime-2,obj.volumeSize(4))+1;
-                case {'uparrow'}                                % up - up z
+                case {'downarrow'}                              % up - up z
                     obj.currentPoint(3) = mod(obj.currentPoint(3),obj.volumeSize(3))+1;
-                case {'downarrow'}                              % down - down z
+                case {'uparrow'}                                % down - down z
                     obj.currentPoint(3) = mod(obj.currentPoint(3)-2,obj.volumeSize(3))+1;
             end
+            set(obj.textHandles,'string',sprintf('%d/%d',obj.currentTime,obj.volumeSize(4)))
             updateImages(obj);     % Update the images of the all figures.
         end
         
@@ -178,13 +183,14 @@ classdef MRViewer3Dt < handle
             obj.currentTime = 1;
             
             if nargin <= 2                                      % If only the volume(s) are given,
-                MRViewer3Dt.parseInputs({},obj);              % Set default parameters for the display settings
+                MRViewer3Dt.parseInputs({},obj);                % Set default parameters for the display settings
             else                                                % Otherwise...
-                MRViewer3Dt.parseInputs(varargin,obj);        % parse the additional input.
+                MRViewer3Dt.parseInputs(varargin,obj);          % parse the additional input.
             end
             
-            obj.figHandle = figure;                          % Make a figure, and save its handle.
-            set(obj.figHandle,'units','normalized','outerposition',[0 0 1 1]); %position the axis in the figure
+            obj.figHandle = figure;                             % Make a figure, and save its handle.
+            set(obj.figHandle,'units','normalized',...
+                'outerposition',[0 0 1 1]);                     % Fullscreen position of the figure
             obj.cursHandles=datacursormode(obj.figHandle);      % Get the data cursor mode handle
             
             obj.axesHandles(1) = axes;                          % Make an axis, and save its handle.
@@ -197,19 +203,20 @@ classdef MRViewer3Dt < handle
             obj.lineHandles(1) = ...                            % The handle for the line
                 plot(0,1,'Color',[0.8,0.8,0.8]);                % The correct coordinates are not necessary at this stage.
             hold off
+            obj.textHandles(1) = text(1,1,'text1');
             
             obj.axesHandles(2) = axes;
             set(obj.axesHandles(2),'position',[.5 .5 .5 .5],...
                 'DataAspectRatio',...                           % Image should be full size, The correct
                 [obj.aspectRatio(3) obj.aspectRatio(1) 1],...   % ... data aspect ratio, and
                 'Tag', 'IMG');                                  % ... can be identified by a the tag 'IMG'
-            
             obj.imgsHandles(2) = imshow(zeros(vS(3),vS(1)));    % Initialize image
             set(obj.axesHandles(2),'view',[-90 90])
             hold on                                             % Hold, to initialize lines
             obj.lineHandles(2) = ...                            % The handle for the line
                 plot(0,1,'Color',[0.8,0.8,0.8]);                % The correct coordinates are not necessary at this stage.
             hold off
+            obj.textHandles(2) = text(vS(1),1,'text2');
             
             obj.axesHandles(3) = axes;
             set(obj.axesHandles(3),'position',[0 .5 .5 .5],...
@@ -221,31 +228,34 @@ classdef MRViewer3Dt < handle
             obj.lineHandles(3) = ...                            % The handle for the line
                 plot(0,1,'Color',[0.8,0.8,0.8]);                % The correct coordinates are not necessary at this stage.
             hold off
+            obj.textHandles(3) = text(1,1,'text3');
             
-            set(obj.figHandle,'WindowButtonDownFcn',...           % set kryboard control
+            set(obj.textHandles,'VerticalAlignment','top','color','red')
+            
+            set(obj.figHandle,'WindowButtonDownFcn',...         % set kryboard control
                 {@MRViewer3Dt.figureClick,obj});
             set(obj.figHandle,'WindowKeyPressFcn',...           % set kryboard control
                 {@MRViewer3Dt.figureKey,obj});
+            updateAxesPostion(obj,1);
             setAspectRatio(obj);
             updateImages(obj);                                  % Update the images.
         end
         
-        function updateImages(obj,axes)                         % Function to update the images
-            if nargin==1                                        % If no specific figure is requested,
-                axes = obj.axesHandles;                         % update them all.
+        function updateImages(obj,axIdx)                        % Function to update the images
+            if nargin==1 || isempty(axIdx)                      % If no specific axes is requested,
+                axIdx = obj.axesHandles;                        % update them all.
             end
-            for loop = 1:length(axes)                           % Loop through the figure handles that should be updated.
-                IMG=MRViewer3Dt.provideImage(axes(loop),obj);   % Get the right image,
-                try set(obj.imgsHandles(axes(loop) == ...       % And try to show it
+            for loop = 1:length(axIdx)                          % Loop through the figure handles that should be updated.
+                IMG=MRViewer3Dt.provideImage(axIdx(loop),obj);  % Get the right image,
+                try set(obj.imgsHandles(axIdx(loop) == ...      % And try to show it
                         obj.axesHandles),'CData',IMG); end      % ... (The 'try' is there in case a window was closed by the user)
-            end
-            % update axes poistions
-            updateAxesPostion(obj);
+            end 
             updateMarkers(obj);                                 % Set the line markers correctly.
         end
         
         function updateAxesPostion(obj,flagfig)
-            vSar = obj.volumeSize(1:3).*obj.aspectRatio;
+            vS = size(obj.backVol);
+            vSar = vS(1:3).*obj.aspectRatio;
             ss = get(0,'screensize');
             scale = [vSar(2)+vSar(3),vSar(1)+vSar(3),vSar(2)+vSar(3),vSar(1)+vSar(3)];
             set(obj.axesHandles(1),'position',[0  0 vSar(2) vSar(3)]./scale);
@@ -280,6 +290,7 @@ classdef MRViewer3Dt < handle
                 warning('Background image should have the same dimensions!');
             end;
             obj.backVol = Value;                                % Set the volume.
+            updateAxesPostion(obj);
             updateImages(obj);                                  % Update the images.
         end
         
@@ -292,7 +303,7 @@ classdef MRViewer3Dt < handle
             obj.overVol = Value;                                % Set the overlay
             if isempty(obj.overRange)                           % If the overlay range was previously empty, ...
                 obj.overRange = MRViewer3Dt.getRange(Value);  % Get the defaults.
-                showColorBar(obj,'UpdateIfExist');              % If there is a colorbar, update it.
+                %showColorBar(obj,'UpdateIfExist');              % If there is a colorbar, update it.
             end
             updateImages(obj);                                  % Update the images.
         end
@@ -309,13 +320,21 @@ classdef MRViewer3Dt < handle
                 Value = obj.aspectRatio;
             end
             
+            vS = size(obj.backVol);
             set(obj.axesHandles(1),...              % Find all objects in figure 1 ...
-                'DataAspectRatio',[Value(3) Value(2) 1]);   % and set the aspect ratio.
+                'DataAspectRatio',[Value(3) Value(2) 1],...   % and set the aspect ratio.
+                'Ylim',[1 vS(3)],...
+                'XLim',[1 vS(2)]);
+            
             set(obj.axesHandles(2),...              % Find all objects in figure 2
-                'DataAspectRatio',[Value(3) Value(1) 1]);   % and set the aspect ratio.
+                'DataAspectRatio',[Value(3) Value(1) 1],...   % and set the aspect ratio.
+                'Ylim',[1 vS(3)],...
+                'XLim',[1 vS(1)]);
             set(obj.axesHandles(3),...              % Find all objects in figure 3
-                'DataAspectRatio',[Value(1) Value(2) 1]);   % and set the aspect ratio.
-            updateAxesPostion(obj,1);
+                'DataAspectRatio',[Value(1) Value(2) 1],...   % and set the aspect ratio.
+                'Ylim',[1 vS(1)],...
+                'XLim',[1 vS(2)]);
+            updateAxesPostion(obj);
         end
         
         function setBackRange(obj, Value)                       % Set the background color range

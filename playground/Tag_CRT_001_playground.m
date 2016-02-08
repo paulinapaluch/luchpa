@@ -9,6 +9,7 @@ M.calcbreathingCorrection;
 % M.dispField.update(M,'DFbspline2Dcons_DJK'); 
 % M.dispField.update(M,'DFbspline3Dcons_DJK');
 M.dispField.calcDispField(M,'DFbspline2Dcons_DJK'); 
-M.dispField.calcDispField(M,'DFbspline3Dcons_DJK');
+% M.dispField.calcDispField(M,'DFbspline3Dcons_DJK');
+M.dispField.calcDispField(M,'DFbspline3Dcons_DJK_p9');
 
 beep,pause(.2),beep,pause(.1),beep,pause(.1),beep

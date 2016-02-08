@@ -7,6 +7,8 @@ classdef MRDispField  < handle
         allowedDF = {...
             'DFbspline2Dcons_DJK',@MRRegistration.register2DconsBspline_DJK;...
             'DFbspline3Dcons_DJK',@MRRegistration.register3DconsBspline_DJK;...
+            'DFbspline3Dcons_DJK_p9',@MRRegistration.register3DconsBspline_DJK_p9;...
+            'DFbspline3Dcons_DJK_p0',@MRRegistration.register3DconsBspline_DJK_p0;...
             'DFdemon2Dcons_DJK',  @myfun;...
             'DFdemon3Dcons_DJK',  @myfun;...
             'DFdemon2Dcons_mat',  @myfun;...
@@ -20,10 +22,12 @@ classdef MRDispField  < handle
     
     properties (GetAccess = public, SetAccess = private)
         loadDirPath = '';	% updated on load
-        back % calculated backwad displacement field
-        forw % calculated forward displacement field
-        type
-        MRDataUID
+        back            % calculated backwad displacement field
+        forw            % calculated forward displacement field
+        regoptions      % registration options
+        type            % name, one of the allowedDF
+        MRDataUID       % to check if DF is loaded to the right MRData
+        empty = [];     % sometimes empty is needed
     end
     
     methods
@@ -60,7 +64,7 @@ classdef MRDispField  < handle
                 % calulate and save the DF
                 myfun = DF.allowedDF{idx,2};
                 try
-                    [DF.back, DF.forw] = myfun(MRData);
+                    [DF.back, DF.forw, DF.regoptions] = myfun(MRData);
                     DF.type = type;
                 catch ex
                     disp(ex)
@@ -103,11 +107,12 @@ classdef MRDispField  < handle
             
             fullPath = fullfile(DF.saveDirPath,DF.type);
             try
-                back = DF.back;
-                forw = DF.forw;
-                type = DF.type;
-                MRDataUID = DF.MRDataUID;
-                save(fullPath,'back','forw','type','MRDataUID')
+                back        = DF.back;
+                forw        = DF.forw;
+                type        = DF.type;
+                regoptions  = DF.regoptions;
+                MRDataUID   = DF.MRDataUID;
+                save(fullPath,'back','forw','type','MRDataUID','regoptions')
                 DF.loadDirPath = DF.saveDirPath;
             catch ex
                 disp(ex)

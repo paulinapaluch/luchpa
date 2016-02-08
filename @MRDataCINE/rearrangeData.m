@@ -7,9 +7,8 @@ imagePositionPatient=[dcmTags(1,:).ImagePositionPatient];
 
 triggerTimes = [dcmTags(1,:).TriggerTime];
 uSeriesNumbers = unique(seriesNumbers);
-uSliceLocations = unique(sliceLocations);
 
-[uSliceLocations,idx] = unique(uSliceLocations);
+[uSliceLocations,idx] = unique(sliceLocations);
 if imagePositionPatient(3,idx(1))<imagePositionPatient(3,idx(end))
     uSliceLocations=fliplr(uSliceLocations);
 end
@@ -33,6 +32,7 @@ if size(dcmData,4) ~= nSlices*nTimes
 end
 
 dcmData_out = zeros(size(dcmData,1),size(dcmData,2),nSlices,nTimes);
+%dcmTags_out = cell(nSlices,nTimes);
 myTime_out  = zeros(nSlices,nTimes);
 
 for iPic=1:size(dcmData,4)
@@ -40,7 +40,6 @@ for iPic=1:size(dcmData,4)
     iTime = find(mytimes(iSlice,:)==triggerTimes(iPic),1,'first');
     
     if ~isempty(iTime)
-        
         dcmData_out(:,:,iSlice,iTime)=dcmData(:,:,1,iPic);
         dcmTags_out(iSlice,iTime)=dcmTags(1,iPic);
         myTime_out(iSlice,iTime) = triggerTimes(iPic);

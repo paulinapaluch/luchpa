@@ -31,18 +31,24 @@ cardiacNumberOfImages = [dcmTagsOK.(CardiacNumberOfImagesField)];
 %instanceNumbers = [dcmTags(1,idxOK).InstanceNumber];
 %triggerTimes = [dcmTags(1,idxOK).TriggerTime];
 
+idxTIempty = cellfun(@isempty,{dcmTagsOK.InversionTime}); % find tags idxs with empty inversion time
+[dcmTagsOK(1,idxTIempty).InversionTime]=deal(0); % and fill them with 0;
+inversionTimes = [dcmTagsOK.InversionTime];
+
 %%% looking for he largest group of images with cardiacNumberOfImages>1 
 %%% and having the most slices in the same orientation  
-condition1 = cardiacNumberOfImages>1;
+condition1 = cardiacNumberOfImages>1; % has to be cine
+condition3 = inversionTimes==0; % cannot have inversion time (to eliminate TI scouts in GE)
 
-[uniqueImageOrientationPatientStr,~,ic] = unique(imageOrientationPatient','rows');
+roundedImageOrientetionPatient = round(1e6*imageOrientationPatient')/1e6; % allowing precision of the same orientation to be 1e-6
+[uniqueImageOrientationPatientStr,~,ic] = unique(roundedImageOrientetionPatient,'rows'); 
 [N,~,bins]=histcounts(ic,length(uniqueImageOrientationPatientStr));
 
 conditionAll = zeros(size(condition1));
 for n=1:length(N)
-    condition2=(bins==n)';
-    if sum(conditionAll)<sum(condition1 & condition2);
-        conditionAll=condition1 & condition2;
+    condition2=(bins==n)'; % most images with the same orientation
+    if sum(conditionAll)<sum(condition1 & condition2 & condition3);
+        conditionAll=condition1 & condition2 & condition3;
     end
 end
 

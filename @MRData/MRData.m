@@ -9,6 +9,9 @@ classdef (Abstract) MRData < matlab.mixin.SetGet
         savePath;  % where the object will be saved. Updated on load, may be freely changed
     end
     
+    properties
+    end
+    
     properties (GetAccess = public, SetAccess = protected)
         loadPath = '';	% updated on loading previously saved matlab data
         dcmsPath = '';	% updated in loading new data from dicoms
@@ -83,6 +86,12 @@ classdef (Abstract) MRData < matlab.mixin.SetGet
             sliceDistances = calcSliceDistances(obj);
         end
         
+        function out = slicesIdxIso(obj)
+            minPixSize = min(obj.aspectRatio);
+            myscale = minPixSize./obj.aspectRatio;
+            out = 1:myscale(3):obj.nSlices;
+        end
+        
         function dataIso = get.dataIso(obj)
             if isempty(obj.dataIso)
                 obj.dataIso = calcIsoTropicData(obj);
@@ -91,7 +100,7 @@ classdef (Abstract) MRData < matlab.mixin.SetGet
             end  
         end
         
-        isoData = calcIsoTropicData(obj);
+        dataIso = calcIsoTropicData(obj);
         [timesT,timesST] = calcTimes(obj);
         sliceDistances = calcSliceDistances(obj,flags);
         breathShifts = calcbreathingCorrection(obj);
@@ -101,6 +110,8 @@ classdef (Abstract) MRData < matlab.mixin.SetGet
     methods (Static)
         dcmFilenamesCell = getDicomFilenamesCell(dcmDir);
         dcmTags = getDcmTagsCellFromDicomFilenamesCell(dcmFilenamesCell);
+        
+
         
         function obj = load(mypath)
             %%% a dummy variable used in loadobj method

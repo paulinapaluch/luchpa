@@ -11,30 +11,39 @@ classdef MRDataCINE < MRData
     % <mrkonrad.github.io>
     
     properties (Constant)
-        % this is visible from class, >>MRDispField.allowedImages
+        % this is visible from class, >> MRDispField.allowedImages
         mrconfig = {'className','MRDataCINE';...
                     'overlayClass','dispField'};
         allowedImages = {...   % working on MRDataCINE object, fe. M.(allowedImages(1,1))
-            'data',   'Data with corrections';...
-            'dataRaw','Data from dicom';...
-            'dataIso','Data with corrections isotropic (interpolated)'};
+            'data',   'Data with corrections','useAspectRatio';...
+            'dataRaw','Data from dicom','useAspectRatio';...
+            'dataIso','Data with corrections isotropic (interpolated)',''};
         allowedOverlays = {... % working on MRDispField object within MRDataCINE object, fe. M.dispField.(allowedImages(1,1))
+            'empty','None',1;...
             'back','back',3;...
             'forw','forw',3;...
             ...%'comb','comb',3;...
             'magBack','magBack',1;...
             'magForw','magForw',1};...
             %'magComb','magComb',1}
+        % I think I should add 'mother data' to allowed overlays. backDF
+        % calculated on dataRaw should not be used on shifted data
     end
     
     properties
-        savePath        % path where the object is stored 
-        epi             % epicardial ROI
-        endo            % endocardial ROI
+        savePath     = [];      % path where the object is stored
+        epi          = [];      % epicardial MRRoi object
+        endo         = [];      % endocardial MRRoi object
+        tEndSystole  = [];      % end systole per slice
+        tEndDiastole = [];      % end diastole per slice
+        miccaiInDir  = [];      % in case miccai 2009 import is needed
+        miccaiOutDir = [];      % in case miccai 2009 export is needed
+        qmassInFile  = [];      % in case qmass import is needed
+        qmassOutFile = [];      % in case qmass export is needed
     end
     
     properties (GetAccess = public, SetAccess = protected)
-        dispField = [];
+        dispField    = [];      % MRDispField object
     end
     
     methods 
@@ -42,7 +51,7 @@ classdef MRDataCINE < MRData
         %%% ---------------------- CONSTRUCTOR ---------------------- %%%
         
         function obj=MRDataCINE(varargin)
-            if nargin<2
+            if nargin~=2
                 error('Wrong input data')
             elseif nargin==2 && exist(varargin{1},'dir') % from dicom dirs path
                 obj.dcmsPath = varargin{1};
@@ -58,9 +67,9 @@ classdef MRDataCINE < MRData
         
         %%% --------------------- OTHER METHODS --------------------- %%%
         
-        function obj = set.savePath(obj,savePath)
+        function obj = set.savePath(obj,savePathValue)
             
-            obj.savePath = savePath;
+            obj.savePath = savePathValue;
             
             if ~exist(obj.saveDirPath,'dir')
                 success = mkdir(obj.saveDirPath);
@@ -93,6 +102,7 @@ classdef MRDataCINE < MRData
         
         %%% --------------- Methods is separate files --------------- %%%
         obj = getCineDataFromStudyDir(obj,dcmDir);
+        obj = importMICCAI2009(obj);
     end
     
     

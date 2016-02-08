@@ -1,4 +1,4 @@
-function isoData = calcIsoTropicData(obj,interpType)
+function dataIso = calcIsoTropicData(obj,interpType)
 
 if ~exist('interpType','var')
     %interpType = 'linear';
@@ -15,10 +15,10 @@ myscale = minPixSize./obj.aspectRatio;
 
 fprintf('Interpolation (%s)',interpType)
 mytic = tic;
-isoData = zeros(size(newx));
+dataIso = zeros(size(newx));
 for iTime = 1:obj.nTimes
     for iDim = 1:obj.nDims
-    isoData(:,:,:,iTime,iDim) = interp3(...
+    dataIso(:,:,:,iTime,iDim) = interp3(...
         obj.data(:,:,:,iTime,iDim),...
         newx,newy,newz,interpType);
     end
@@ -27,5 +27,5 @@ end
 
 fprintf(' in %.2f sec.\n',toc(mytic))
 
-obj.dataIso=isoData;
+obj.dataIso=dataIso;
 save(obj.savePath,'obj');

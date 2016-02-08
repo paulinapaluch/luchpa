@@ -637,6 +637,7 @@ for refine_itt=1:MaxItt
     
     % Reshape O_trans from a vector to a matrix
     O_trans=reshape(O_trans,sizes);
+    fprintf('.')
 end
 
 

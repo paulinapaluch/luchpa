@@ -16,8 +16,8 @@ classdef MRRoi < matlab.mixin.SetGet
         function obj = MRRoi(nSlices,nTimes,varargin)
             obj.pointsMan = cell(nSlices,nTimes);
             obj.pointsAut = cell(nSlices,nTimes);
-            if nargin>2, obj.name = varargin{3};end
-            if nargin>3, obj.color = varargin{4};end
+            if nargin>2, obj.name = varargin{1};end
+            if nargin>3, obj.color = varargin{2};end
             if nargin>4, error('Too many imput args');end
         end
         
@@ -29,16 +29,18 @@ classdef MRRoi < matlab.mixin.SetGet
         end
         
         function obj = set.pointsMan(obj,val)
-            if ~isa(val,'cell') || all(size(val)==size(obj.pointsMan))
-                error('Points has to be in cell with certain size - cell(nSlices,nTimes)');
-            end
+% following is not working with indexes, fe obj.epi.pointsMan{3,3}=0;
+%             if ~isa(val,'cell') || all(size(val)==size(obj.pointsMan))
+%                 error('Points has to be in cell with certain size - cell(nSlices,nTimes)');
+%             end
             obj.pointsMan = val;
         end
         
         function obj = set.pointsAut(obj,val)
-            if ~isa(val,'cell') || all(size(val)==size(obj.pointsMan))
-                error('Points has to be in cell with certain size - cell(nSlices,nTimes)');
-            end
+% following is not working with indexes, fe obj.epi.pointsMan{3,3}=0;
+%             if ~isa(val,'cell') || all(size(val)==size(obj.pointsAut))
+%                 error('Points has to be in cell with certain size - cell(nSlices,nTimes)');
+%             end
             obj.pointsAut = val;
         end
         
