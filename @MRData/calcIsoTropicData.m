@@ -1,5 +1,6 @@
 function dataIso = calcIsoTropicData(obj,interpType)
 
+disp('Calculating isotropic data.')
 if ~exist('interpType','var')
     %interpType = 'linear';
     interpType = 'spline';

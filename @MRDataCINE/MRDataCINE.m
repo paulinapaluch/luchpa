@@ -2,8 +2,11 @@ classdef MRDataCINE < MRData
     %MRDataCINE stores the data and allows for displacement field
     %   calculations using MRRegistration methods
     %   
-    %   There are two ways to get a MRDataCINE object:
-    %   - analysing dicom directory of single study
+    %   There are three ways to get a MRDataCINE object:
+    %   - providing dicom dir path (study) - its contents will be analysed 
+    %   to get desired data
+    %   - providing cell of dicom dir paths (multiple series) - its 
+    %   contents will be analysed to get desired data
     %   - loading previously saved MRDataCINE object
     %
     % Konrad Werys, Feb 2016
@@ -12,16 +15,17 @@ classdef MRDataCINE < MRData
     
     properties (Constant)
         % this is visible from class, >> MRDispField.allowedImages
-        mrconfig = {'className','MRDataCINE';...
-                    'overlayClass','dispField'};
+        className   = 'MRDataCINE';
+        numClassName = 'dispField';
+
         allowedImages = {...   % working on MRDataCINE object, fe. M.(allowedImages(1,1))
             'data',   'Data with corrections','useAspectRatio';...
             'dataRaw','Data from dicom','useAspectRatio';...
             'dataIso','Data with corrections isotropic (interpolated)',''};
         allowedOverlays = {... % working on MRDispField object within MRDataCINE object, fe. M.dispField.(allowedImages(1,1))
-            'empty','None',1;...
-            'back','back',3;...
-            'forw','forw',3;...
+            'empty',  'None',   1;...
+            'back',   'back',   3;...
+            'forw',   'forw',   3;...
             ...%'comb','comb',3;...
             'magBack','magBack',1;...
             'magForw','magForw',1};...
@@ -31,7 +35,6 @@ classdef MRDataCINE < MRData
     end
     
     properties
-        savePath     = [];      % path where the object is stored
         epi          = [];      % epicardial MRRoi object
         endo         = [];      % endocardial MRRoi object
         tEndSystole  = [];      % end systole per slice
@@ -42,51 +45,42 @@ classdef MRDataCINE < MRData
         qmassOutFile = [];      % in case qmass export is needed
     end
     
-    properties (GetAccess = public, SetAccess = protected)
+    properties (GetAccess = public, SetAccess = protected, Transient)
         dispField    = [];      % MRDispField object
     end
     
     methods 
-        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%% ---------------------- CONSTRUCTOR ---------------------- %%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function obj=MRDataCINE(varargin)
             if nargin~=2
                 error('Wrong input data')
-            elseif nargin==2 && exist(varargin{1},'dir') % from dicom dirs path
+            elseif nargin==2
                 obj.dcmsPath = varargin{1};
                 obj.savePath = varargin{2};
-                obj = getCineDataFromStudyDir(obj,varargin{1});
+                if iscell(varargin{1})
+                    obj = getCineDataFromSeriesCell(obj,varargin{1});
+                elseif exist(varargin{1},'dir') % from dicom dirs path
+                    obj = getCineDataFromStudyDir(obj,varargin{1});
+                end
             end
             obj.calcSliceDistances;
             obj.calcTimes;
             obj.dispField = MRDispField(obj);
             obj.epi  = MRRoi(obj.nSlices,obj.nTimes,'Epi','green');
             obj.endo = MRRoi(obj.nSlices,obj.nTimes,'Endo','red');
+            obj.dupaSave;
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%% --------------------- OTHER METHODS --------------------- %%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function obj = set.savePath(obj,savePathValue)
-            
-            obj.savePath = savePathValue;
-            
-            if ~exist(obj.saveDirPath,'dir')
-                success = mkdir(obj.saveDirPath);
-                if ~success, warning('Not able to create a directory');end
-            end
-            if ~isempty(obj.dispField)
-                obj.dispField.saveDirPath = obj.saveDirPath;
-            end
-        end
-        
-        function save(obj)
-            save(obj.savePath,'obj');
-        end
-        
-        function obj = saveobj(obj)
-            %%% TODO find out why this one is called 2 times
-            if strcmp(obj.savePath,'')
+        function sobj = saveobj(obj)
+            %%% it is called 2 times, because http://stackoverflow.com/questions/6677486/why-does-matlab-save-call-saveobj-twice
+            if isempty(obj.savePath)
                 warning('Probably saving to the wrong path %s',pwd)
             else
                 fprintf('Saving to %s\n',obj.savePath)
@@ -94,23 +88,34 @@ classdef MRDataCINE < MRData
             
             % save DispField separately
             if ~isempty(obj.dispField) 
-                obj.dispField.saveDirPath = obj.saveDirPath;
+                obj.dispField.savePath = obj.getFullSavePath;
                 obj.dispField.saveDispField;
-                obj.dispField = MRDispField(obj);
             end
+            
+            sobj = obj;
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%% --------------- Methods is separate files --------------- %%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         obj = getCineDataFromStudyDir(obj,dcmDir);
-        obj = importMICCAI2009(obj);
+        obj = getCineDataFromSeriesCell(obj,dcmDirs);
+        obj = importRoisMICCAI2009(obj);
+        obj = exportRoisMICCAI2009(obj);
+        obj = exportRoisQmass(obj);
     end
     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% ---------------------- Static Methods  ---------------------- %%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     methods (Static)
         
-        %%% --------------- Methods is separate files --------------- %%%
-        [dcmData,dcmTags] = rearrangeData(dcmData,dcmTags); % static couse it is called in the constructor
-
+        % provide class name (by calling mfilename) to MRData load method
+        function obj = load(mypath)
+            obj = load@MRData(mypath,mfilename);
+        end
     end
     
 end

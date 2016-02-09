@@ -1,6 +1,10 @@
 classdef MRV < MRViewer3Dt
-    %UNTITLED Summary of this class goes here
+    %MRV Summary of this class goes here
     %   Detailed explanation goes here
+    %
+    % Konrad Werys, Feb 2016
+    % konradwerys@gmail.com
+    % <mrkonrad.github.io>
     
     properties
         MRData      = [];
@@ -33,8 +37,8 @@ classdef MRV < MRViewer3Dt
             backVol = M.(M.allowedImages{1,1});
             overVol = [];
             overDims=0;
-            if ~isempty(M.(M.mrconfig{2,2}))
-                temp = M.(M.mrconfig{2,2}).(M.allowedOverlays{1,1})(:,:,:,:,1);
+            if ~isempty(M.(M.numClassName))
+                temp = M.(M.numClassName).(M.allowedOverlays{1,1})(:,:,:,:,1);
                 if ~isempty(temp) && all(size(temp)==size(backVol)) 
                     overVol = temp;
                     overDims = M.allowedOverlays{1,3};
@@ -43,8 +47,8 @@ classdef MRV < MRViewer3Dt
             obj@MRViewer3Dt(backVol,overVol);
             obj.MRData = M;
             obj.setAspectRatio(M.aspectRatio);
-            obj.epi  = obj.MRData.epi;      % pointers
-            obj.endo = obj.MRData.endo;     % pointers
+            obj.epi  = obj.MRData.epi;      % 'pointers'
+            obj.endo = obj.MRData.endo;     % 'pointers'
             obj.shifts = M.breathShifts;
             obj.overDims = overDims;
             obj.currentDim = 1;
@@ -115,18 +119,18 @@ classdef MRV < MRViewer3Dt
         function initROIs(obj)
             axes(obj.axesHandles(1))
             hold on                                                 % Hold, to initialize rois
-            obj.epiManHandles(1)  = plot(0,0,'.','Color',obj.MRData.epi.color);
-            obj.endoManHandles(1) = plot(0,0,'.','Color',obj.MRData.endo.color);
+            obj.epiManHandles(1)  = plot(0,0,'.','Color',obj.epi.color);
+            obj.endoManHandles(1) = plot(0,0,'.','Color',obj.endo.color);
             hold off
             axes(obj.axesHandles(2))
             hold on                                                 % Hold, to initialize rois
-            obj.epiManHandles(2)  = plot(0,0,'.','Color',obj.MRData.epi.color);
-            obj.endoManHandles(2) = plot(0,0,'.','Color',obj.MRData.endo.color);
+            obj.epiManHandles(2)  = plot(0,0,'.','Color',obj.epi.color);
+            obj.endoManHandles(2) = plot(0,0,'.','Color',obj.endo.color);
             hold off
             axes(obj.axesHandles(3))
             hold on                                                 % Hold, to initialize rois
-            obj.epiManHandles(3)  = plot(0,0,'.','Color',obj.MRData.epi.color);
-            obj.endoManHandles(3) = plot(0,0,'.','Color',obj.MRData.endo.color);
+            obj.epiManHandles(3)  = plot(0,0,'.','Color',obj.epi.color);
+            obj.endoManHandles(3) = plot(0,0,'.','Color',obj.endo.color);
             hold off   
         end
         
@@ -255,9 +259,9 @@ classdef MRV < MRViewer3Dt
             dimIdx = varargin{4};
             M = obj.MRData;
             if isempty(dimIdx)
-                overVol = M.(M.mrconfig{2,2}).(M.allowedOverlays{overIdx,1});
+                overVol = M.(M.numClassName).(M.allowedOverlays{overIdx,1});
             else
-                overVol = M.(M.mrconfig{2,2}).(M.allowedOverlays{overIdx,1})(:,:,:,:,dimIdx);
+                overVol = M.(M.numClassName).(M.allowedOverlays{overIdx,1})(:,:,:,:,dimIdx);
             end
             if ~isempty(overVol) && all(size(overVol)==size(obj.backVol))
                 obj.setOverVolume(overVol);

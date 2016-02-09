@@ -1,9 +1,5 @@
 function breathShifts = calcbreathingCorrection(obj)
 
-if isempty(obj.dataRaw)
-    obj.dataRaw = obj.data;
-end
-
 myoptions=struct(...
     'Similarity','sd',...
     'Registration','Rigid',...
@@ -76,4 +72,3 @@ end
 
 obj.breathShifts=breathShifts;
 obj.shiftRawData;
-obj.calcIsoTropicData;

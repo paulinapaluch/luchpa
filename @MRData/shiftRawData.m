@@ -1,9 +1,6 @@
 function data=shiftRawData(obj)
 
-if isempty(obj.dataRaw)
-    obj.dataRaw = obj.data;
-end
-
+data = zeros(size(obj.dataRaw));
 for iSlice = 1:obj.nSlices
     M=eye(3);
     M(1,3)=obj.breathShifts(iSlice,1);

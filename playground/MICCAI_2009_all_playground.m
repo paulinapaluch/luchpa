@@ -31,6 +31,8 @@ names{13} = 'SC-N-9';
 names{14} = 'SC-N-10';
 names{15} = 'SC-N-11';
 
+%%
+
 for iname=find(~cellfun(@isempty,names))
     dcmDir_temp = fullfile(dcmDir,names{iname});
     matDir_temp = fullfile(matDir,names{iname});

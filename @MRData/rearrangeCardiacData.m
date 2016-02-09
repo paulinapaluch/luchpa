@@ -1,4 +1,4 @@
-function [dcmData_out,dcmTags_out]=rearrangeData(dcmData,dcmTags)
+function [dcmData_out,dcmTags_out]=rearrangeCardiacData(dcmData,dcmTags)
 
 
 seriesNumbers=[dcmTags(1,:).SeriesNumber];

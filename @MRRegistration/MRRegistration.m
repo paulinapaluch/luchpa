@@ -6,6 +6,7 @@ classdef MRRegistration
     end
     
     methods (Static)
+        [DF_forw,DF_back,regoptions] = emptyDF(MRData); % cons - consecutive frames
         [DF_forw,DF_back,regoptions] = register2DconsBspline_DJK(MRData); % cons - consecutive frames
         [DF_forw,DF_back,regoptions] = register3DconsBspline_DJK(MRData);
         [DF_forw,DF_back,regoptions] = register3DconsBspline_DJK_p9(MRData);

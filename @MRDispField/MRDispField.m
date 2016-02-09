@@ -1,10 +1,14 @@
 classdef MRDispField  < handle
-    %UNTITLED2 Summary of this class goes here
+    %MRDispField Summary of this class goes here
     %   Detailed explanation goes here
+    %
+    % Konrad Werys, Feb 2016
+    % mrkonrad.github.io
     
     properties (Constant)
         % this is visible from class, >>MRDispField.allowedDF
         allowedDF = {...
+            'emptyDF',@MRRegistration.emptyDF;...
             'DFbspline2Dcons_DJK',@MRRegistration.register2DconsBspline_DJK;...
             'DFbspline3Dcons_DJK',@MRRegistration.register3DconsBspline_DJK;...
             'DFbspline3Dcons_DJK_p9',@MRRegistration.register3DconsBspline_DJK_p9;...
@@ -17,11 +21,11 @@ classdef MRDispField  < handle
     end
     
     properties
-        saveDirPath = '';
+        savePath = '';
     end
     
     properties (GetAccess = public, SetAccess = private)
-        loadDirPath = '';	% updated on load
+        loadPath = '';	% updated on load
         back            % calculated backwad displacement field
         forw            % calculated forward displacement field
         regoptions      % registration options
@@ -38,13 +42,13 @@ classdef MRDispField  < handle
             elseif nargin==1
                 MRDataTemp = varargin{1};
                 DF.MRDataUID = MRDataTemp.UID;
-                DF.loadDirPath = MRDataTemp.loadDirPath;
-                DF.saveDirPath = MRDataTemp.saveDirPath;
+                DF.loadPath = MRDataTemp.getFullLoadPath;
+                DF.savePath = MRDataTemp.getFullSavePath;
             elseif nargin==2
                 MRDataTemp = varargin{1};
                 DF.MRDataUID = MRDataTemp.UID;
-                DF.loadDirPath = MRDataTemp.loadDirPath;
-                DF.saveDirPath = MRDataTemp.saveDirPath;
+                DF.loadPath = MRDataTemp.getFullLoadPath;
+                DF.savePath = MRDataTemp.getFullSavePath;
                 DF.type = varargin{3};
             end
         end
@@ -105,7 +109,7 @@ classdef MRDispField  < handle
         
         function DF = saveDispField(DF)
             
-            fullPath = fullfile(DF.saveDirPath,DF.type);
+            fullPath = fullfile(DF.savePath,[DF.type,'.mat']);
             try
                 back        = DF.back;
                 forw        = DF.forw;
@@ -113,7 +117,7 @@ classdef MRDispField  < handle
                 regoptions  = DF.regoptions;
                 MRDataUID   = DF.MRDataUID;
                 save(fullPath,'back','forw','type','MRDataUID','regoptions')
-                DF.loadDirPath = DF.saveDirPath;
+                DF.loadPath = DF.savePath;
             catch ex
                 disp(ex)
             end
@@ -131,30 +135,11 @@ classdef MRDispField  < handle
             end
         end
         
-%         function back = getDispFieldback(DF,MRData)
-%             emptyBack = isempty(DF.back);
-%             emptyType = isempty(DF.type);
-% 
-%             if emptyBack && nargin ==1
-%                 error('Not enough args')
-%             elseif emptyBack && nargin ==2 && ~emptyType
-%                 DF.update();
-%             elseif emptyBack && nargin ==2 && emptyType
-%             back = DF.back(MRData);
-%         end
-        
-%         function back = getDispFieldforw(DF)
-%             if isempty(DF.forw)
-%                 DF.update;
-%             end
-%             back = DF.forw;
-%         end
-        
         function dfComb = getDispFieldCom(DF)
-            disp('TBI')
+            msgbox('TBI')
         end    
         
-        function DF = set.type(DF,type)
+        function set.type(DF,type)
             % check if it is on the list of allowed types
             if any(ismember(DF.allowedDF(:,1),type))
                 DF.type = type;
@@ -164,13 +149,6 @@ classdef MRDispField  < handle
                 error('Wrong Disp Field type (look up)')
             end
         end
-        
-%         function saveDirPath = get.saveDirPath(DF)
-%             if strcmp(DF.saveDirPath,'')
-%                 saveDirPath = DF.loadDirPath;
-%                 DF.saveDirPath = saveDirPath;
-%             end
-%         end
         
         function out = typeIdx(DF,type)
             out = find((ismember(DF.allowedDF(:,1),type)));
