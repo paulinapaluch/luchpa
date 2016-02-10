@@ -55,17 +55,22 @@ classdef MRDataCINE < MRData
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function obj=MRDataCINE(varargin)
-            if nargin~=2
-                error('Wrong input data')
-            elseif nargin==2
+            if nargin==2
                 obj.dcmsPath = varargin{1};
                 obj.savePath = varargin{2};
-                if iscell(varargin{1})
+                if iscell(varargin{1})  % from dicom dirs cell
                     obj = getCineDataFromSeriesCell(obj,varargin{1});
-                elseif exist(varargin{1},'dir') % from dicom dirs path
+                elseif exist(varargin{1},'dir') % from one dicom dir
                     obj = getCineDataFromStudyDir(obj,varargin{1});
                 end
+            elseif nargin==4 % from one dicom dir with conditions
+                obj.dcmsPath = varargin{1};
+                obj.savePath = varargin{2};
+                obj = getCineDataFromStudyDirWithCondition(obj,varargin{1},varargin{3},varargin{4});
+            else
+                error('Wrong input data')
             end
+            getObjParamsFromDcmTags(obj);
             obj.calcSliceDistances;
             obj.calcTimes;
             obj.dispField = MRDispField(obj);

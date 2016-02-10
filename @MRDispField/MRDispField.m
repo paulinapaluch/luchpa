@@ -136,7 +136,7 @@ classdef MRDispField  < handle
         end
         
         function dfComb = getDispFieldCom(DF)
-            msgbox('TBI')
+            disp('getDispFieldCom: TBI')
         end    
         
         function set.type(DF,type)

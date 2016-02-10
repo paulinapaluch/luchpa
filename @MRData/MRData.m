@@ -97,7 +97,7 @@ classdef (Abstract) MRData < matlab.mixin.SetGet
         % return zeros. Probably this can be put in abstract contructor 
         function breathShifts = get.breathShifts(obj)
             if isempty(obj.breathShifts)
-                obj.breathShifts = zeros(size(obj.data,3),2);
+                obj.breathShifts = zeros(size(obj.dataRaw,3),2);
                 %obj.breathShifts = calcbreathingCorrection(obj);
             end
             breathShifts = obj.breathShifts;
@@ -142,6 +142,10 @@ classdef (Abstract) MRData < matlab.mixin.SetGet
         
         % shift data based on obj.breathShifts
         data = shiftRawData(obj);
+        
+        % gets obj.patientName, obj.imageOrientationPatient etc
+        % called in constructor
+        obj = getObjParamsFromDcmTags(obj);
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -83,15 +83,4 @@ end
 obj.dataRaw = dataRaw;
 obj.dcmTags = dcmTags;
 
-obj.imageOrientationPatient = dcmTags(1,1).ImageOrientationPatient';
-obj.imagePositionPatient = dcmTags(1,1).ImagePositionPatient'; 
-obj.aspectRatio = [dcmTags(1,1).PixelSpacing',mean(obj.sliceDistances)];
-
-% some dicom fields checking
-if isfield(dcmTags(1,1),'StudyName'),obj.studyName = strtrim(dcmTags(1,1).StudyName);else obj.studyName='NonameStudy';end
-if isfield(dcmTags(1,1),'SeriesInstanceUID'),obj.UID = dcmTags(1,1).SeriesInstanceUID;else obj.UID=0;end
-fn=[];if isfield(dcmTags(1,1).PatientName,'FamilyName'),fn = [strtrim(dcmTags(1,1).PatientName.FamilyName),' '];end
-gn=[];if isfield(dcmTags(1,1).PatientName,'GivenName'),gn = strtrim(dcmTags(1,1).PatientName.GivenName);end
-obj.patientName = strtrim([fn,gn]);
-
 end

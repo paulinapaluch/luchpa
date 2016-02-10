@@ -22,13 +22,32 @@ end
 
 nTimes = size(mytimes,2);
 
-%%% in case of duplicate siemens slices
+
 if size(dcmData,4) ~= nSlices*nTimes
-    clear mytimes
-    for iSN=1:length(uSeriesNumbers)
-        idx = find(seriesNumbers==uSeriesNumbers(iSN));
-        mytimes(iSN,1:length(idx)) = sort(triggerTimes(idx));
+    %%% in case of duplicate Siemens slices (one slice in one series)
+    if length(uSeriesNumbers)>nSlices
+        for iSN=1:length(uSeriesNumbers)
+            idx = find(seriesNumbers==uSeriesNumbers(iSN));
+            mytimes2(iSN,1:length(idx)) = sort(triggerTimes(idx));
+        end
+    else %%% in case of duplicate GE slices (many slices in one series)
+        %%% find series with most number of files
+        idxRightSeries = 1;
+        for iSN=1:length(uSeriesNumbers)
+            if sum(seriesNumbers==uSeriesNumbers(iSN))>sum(seriesNumbers==uSeriesNumbers(idxRightSeries))
+                idxRightSeries=iSN;
+            end
+        end
+        rightSeriesN = uSeriesNumbers(idxRightSeries);
+        triggerTimes_temp = triggerTimes(seriesNumbers==rightSeriesN);
+        sliceLocations_temp = sliceLocations(seriesNumbers==rightSeriesN);
+        for is=1:nSlices
+            idx = find(sliceLocations_temp==uSliceLocations(is));
+            mytimes2(is,1:length(idx)) = sort(triggerTimes_temp(idx));
+        end
+        nTimes = size(mytimes2,2);
     end
+    mytimes = mytimes2;
 end
 
 dcmData_out = zeros(size(dcmData,1),size(dcmData,2),nSlices,nTimes);
