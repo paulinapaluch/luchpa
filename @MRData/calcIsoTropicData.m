@@ -29,4 +29,3 @@ end
 fprintf(' in %.2f sec.\n',toc(mytic))
 
 obj.dataIso=dataIso;
-save(obj.savePath,'obj');

@@ -92,7 +92,7 @@ classdef MRDataCINE < MRData
             end
             
             % save DispField separately
-            if ~isempty(obj.dispField) 
+            if ~isempty(obj.dispField) && ~isempty(obj.dispField.type) 
                 obj.dispField.savePath = obj.getFullSavePath;
                 obj.dispField.saveDispField;
             end
