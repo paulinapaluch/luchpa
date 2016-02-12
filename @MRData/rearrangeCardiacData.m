@@ -1,14 +1,16 @@
 function [dcmData_out,dcmTags_out]=rearrangeCardiacData(dcmData,dcmTags)
 
-
 seriesNumbers=[dcmTags(1,:).SeriesNumber];
 sliceLocations = [dcmTags(1,:).SliceLocation];
 imagePositionPatient=[dcmTags(1,:).ImagePositionPatient];
 
+
+mytol = 1e-2;
+
 triggerTimes = [dcmTags(1,:).TriggerTime];
 uSeriesNumbers = unique(seriesNumbers);
 
-[uSliceLocations,idx] = unique(sliceLocations);
+[uSliceLocations,idx] = unique(round(sliceLocations/mytol)*mytol);
 if imagePositionPatient(3,idx(1))<imagePositionPatient(3,idx(end))
     uSliceLocations=fliplr(uSliceLocations);
 end
@@ -16,12 +18,11 @@ end
 nSlices = length(uSliceLocations);
 
 for iSN=1:length(uSliceLocations)
-    idx = find(sliceLocations==uSliceLocations(iSN));
+    idx = find(abs(sliceLocations-uSliceLocations(iSN))<mytol);
     mytimes(iSN,1:length(idx)) = sort(triggerTimes(idx));
 end
 
 nTimes = size(mytimes,2);
-
 
 if size(dcmData,4) ~= nSlices*nTimes
     %%% in case of duplicate Siemens slices (one slice in one series)
@@ -42,28 +43,46 @@ if size(dcmData,4) ~= nSlices*nTimes
         triggerTimes_temp = triggerTimes(seriesNumbers==rightSeriesN);
         sliceLocations_temp = sliceLocations(seriesNumbers==rightSeriesN);
         for is=1:nSlices
-            idx = find(sliceLocations_temp==uSliceLocations(is));
+            idx = find(abs(sliceLocations_temp-uSliceLocations(is))<mytol);
             mytimes2(is,1:length(idx)) = sort(triggerTimes_temp(idx));
         end
-        nTimes = size(mytimes2,2);
+        
     end
     mytimes = mytimes2;
 end
 
-dcmData_out = zeros(size(dcmData,1),size(dcmData,2),nSlices,nTimes);
-%dcmTags_out = cell(nSlices,nTimes);
-myTime_out  = zeros(nSlices,nTimes);
+mytimes = unique(mytimes','rows')';
+nTimes = size(mytimes,2);
 
 for iPic=1:size(dcmData,4)
-    iSlice = find(uSliceLocations==sliceLocations(iPic),1,'first');
+    iSlice = find(abs(uSliceLocations-sliceLocations(iPic))<mytol,1,'first');
     iTime = find(mytimes(iSlice,:)==triggerTimes(iPic),1,'first');
     
     if ~isempty(iTime)
-        dcmData_out(:,:,iSlice,iTime)=dcmData(:,:,1,iPic);
-        dcmTags_out(iSlice,iTime)=dcmTags(1,iPic);
-        myTime_out(iSlice,iTime) = triggerTimes(iPic);
+        mycoors(iSlice,iTime) = iPic;
+        %dcmData_out(:,:,iSlice,iTime)=dcmData(:,:,1,iPic);
+        %dcmTags_out(iSlice,iTime)=dcmTags(1,iPic);
+        %myTime_out(iSlice,iTime) = triggerTimes(iPic);
     else
-        disp('Do poprawy!!!')
+        fprintf('!')
+        [~,iTime] = find(mytimes==triggerTimes(iPic),1,'first');
+        mycoors(iSlice,iTime) = iPic;
+        %dcmData_out(:,:,iSlice,iTime)=dcmData(:,:,1,iPic);
+        %dcmTags_out(iSlice,iTime)=dcmTags(1,iPic);
+        %myTime_out(iSlice,iTime) = triggerTimes(iPic);
     end
 end
+fprintf('\n')
+
+dcmData_out = zeros(size(dcmData,1),size(dcmData,2),nSlices,nTimes);
+%dcmTags_out = cell(nSlices,nTimes);
+%myTime_out  = zeros(nSlices,nTimes);
+for s=1:nSlices
+    for t=1:nTimes
+        if mycoors(s,t)>0 && mycoors(s,t)<=size(dcmData,4)
+            dcmData_out(:,:,s,t)=dcmData(:,:,1,mycoors(s,t));
+            dcmTags_out(s,t)=dcmTags(1,mycoors(s,t));
+            %myTime_out(iSlice,iTime) = triggerTimes(iPic);
+        end
+    end
 end

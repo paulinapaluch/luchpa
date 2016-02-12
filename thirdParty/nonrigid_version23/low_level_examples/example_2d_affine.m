@@ -22,6 +22,7 @@ I2s=imfilter(I2,fspecial('gaussian'));
 %   because rotation can be seen as a type of shear transform, the scaling 
 %       of the rotation or shear transform must be very small)
 scale=[1 1 1 0.01 0.01];
+%scale=[1 1 1 0 0];
 
 [x]=lsqnonlin(@(x)affine_registration_image(x,scale,I1s,I2s,type),[0 0 0 100 100],[],[],optimset('Display','iter','MaxIter',100));
 
@@ -30,6 +31,7 @@ x=x.*scale;
 
 % Make the affine transformation matrix
 M=make_transformation_matrix(x(1:2),x(3),x(4:5));
+%M(1,1)=1;M(2,2)=1;
 
 Icor=affine_transform(I1,M,3); % 3 stands for cubic interpolation
 

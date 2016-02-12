@@ -21,11 +21,11 @@ classdef MRDispField  < handle
     end
     
     properties
-        savePath = '';
+        savePath = [];
+        loadPath = [];	% updated on load
     end
     
     properties (GetAccess = public, SetAccess = private)
-        loadPath = '';	% updated on load
         back            % calculated backwad displacement field
         forw            % calculated forward displacement field
         regoptions      % registration options
@@ -87,7 +87,7 @@ classdef MRDispField  < handle
             % add checking if UI
             idx = DF.typeIdx(type);
             if ~isempty(idx)
-                fullPath = fullfile(DF.loadDirPath,type);
+                fullPath = fullfile(DF.loadPath,type);
                 try
                     temp = load(fullPath);
                     DF.back = temp.back;
@@ -123,15 +123,15 @@ classdef MRDispField  < handle
             end
         end
         
-        function DF = update(DF,MRData,type)
-            fullPath = fullfile(DF.loadDirPath,[type,'.mat']);
+        function DF = update(DF,mrData,type)
+            fullPath = fullfile(DF.loadPath,[type,'.mat']);
             % check if already was calculated. If so, load
             if exist(fullPath,'file')
                 fprintf('Loading displacement field: %s\n',type);
-                DF=DF.loadDispField(MRData,type);
+                DF=DF.loadDispField(mrData,type);
             else
                 fprintf('Calculating displacement field: %s\n?',type);
-                DF=DF.calcDispField(MRData,type);
+                DF=DF.calcDispField(mrData,type);
             end
         end
         

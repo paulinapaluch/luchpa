@@ -1,9 +1,9 @@
 % Example of nonrigid registration using steepest gradient optimizer
 %
 % Example is written by D.Kroon University of Twente (October 2008)
-
+%function a
 % clean
-clear all; 
+%clear all; 
 close all; 
 
 % Add all function paths
@@ -52,7 +52,7 @@ Icor=bspline_transform(O_trans,I1,Spacing,3);
 
 % Make a (transformed) grid image
 Igrid=make_grid_image(Spacing,size(I1));
-[Igrid,Tx,Ty]=bspline_transform(O_trans,Igrid,Spacing); 
+[Igrid,T]=bspline_transform(O_trans,Igrid,Spacing); 
 
 % Show the registration results
 figure,

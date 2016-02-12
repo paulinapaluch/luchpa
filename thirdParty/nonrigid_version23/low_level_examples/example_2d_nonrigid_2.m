@@ -57,7 +57,7 @@ O_trans = fminunc(@(x)bspline_registration_gradient(x,sizes,Spacing,I1s,I2s,opti
 O_trans=reshape(O_trans,sizes);
     
 % Transform the input image with the found optimal grid.
-[Icor,Tx,Ty]=bspline_transform(O_trans,I1,Spacing); 
+[Icor,T]=bspline_transform(O_trans,I1,Spacing); 
 
 
 % Show the registration results
@@ -65,6 +65,6 @@ figure,
 subplot(2,2,1), imshow(I1); title('input image 1');
 subplot(2,2,2), imshow(I2); title('input image 2');
 subplot(2,2,3), imshow(Icor); title('transformed image 1');
-subplot(2,2,4), imshow(Tx,[]); title('Tranform in x direction');
+subplot(2,2,4), imshow(T(:,:,1),[]); title('Tranform in x direction');
 
 

@@ -70,7 +70,24 @@ for i = saxCineIdx
     try
         nCines = nCines+1;
         dcmTags(1,nCines) = dcmTagsOK(1,i);
-        dataRaw(:,:,1,nCines) = double(dicomread(dcmFilenamesCellOK{i}));
+        temp = double(dicomread(dcmFilenamesCellOK{i}));
+        
+        if nCines==1
+            dataRaw(:,:,1,nCines) = temp;
+        end
+        
+        if size(dataRaw,1)==size(temp,1) && size(dataRaw,2)==size(temp,2)
+            dataRaw(:,:,1,nCines) = temp;
+        elseif all(dcmTags(1,nCines).PixelSpacing == dcmTags(1,1).PixelSpacing)
+            nX = max(size(dataRaw,1),size(temp,1));
+            nY = max(size(dataRaw,2),size(temp,2));
+            newDataRaw = zeros(nX,nY,1,nCines);
+            newDataRaw(1:size(dataRaw,1),1:size(dataRaw,2),1:size(dataRaw,3),1:size(dataRaw,4))=dataRaw;
+            newDataRaw(1:size(temp,1),1:size(temp,2),1,nCines) = temp;
+            dataRaw = newDataRaw;
+        else
+            error('Wrong size')
+        end
     catch ex
         keyboard
         nCines = nCines-1;

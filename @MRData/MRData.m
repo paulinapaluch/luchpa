@@ -1,4 +1,4 @@
-classdef (Abstract) MRData < matlab.mixin.SetGet
+classdef (Abstract) MRData < handle %matlab.mixin.SetGet
     %MRData is an abstract class, main purpose of its children is to store
     %   data imported from dicoms.
     %

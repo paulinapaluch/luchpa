@@ -59,11 +59,14 @@ classdef MRDataCINE < MRData
                 obj.dcmsPath = varargin{1};
                 obj.savePath = varargin{2};
                 if iscell(varargin{1})  % from dicom dirs cell
+                    disp(varargin{1})
                     obj = getCineDataFromSeriesCell(obj,varargin{1});
                 elseif exist(varargin{1},'dir') % from one dicom dir
+                    disp(varargin{1})
                     obj = getCineDataFromStudyDir(obj,varargin{1});
                 end
             elseif nargin==4 % from one dicom dir with conditions
+                disp(varargin{1})
                 obj.dcmsPath = varargin{1};
                 obj.savePath = varargin{2};
                 obj = getCineDataFromStudyDirWithCondition(obj,varargin{1},varargin{3},varargin{4});
@@ -92,14 +95,21 @@ classdef MRDataCINE < MRData
             end
             
             % save DispField separately
-            if ~isempty(obj.dispField) 
+            if ~isempty(obj.dispField) && ~isempty(obj.dispField.type) 
                 obj.dispField.savePath = obj.getFullSavePath;
                 obj.dispField.saveDispField;
             end
-            
             sobj = obj;
         end
         
+        function dispField = get.dispField(obj)
+            if isempty(obj.dispField)
+                obj.dispField = MRDispField(obj);
+                obj.dispField.savePath = obj.getFullSavePath;
+                obj.dispField.loadPath = obj.loadPath;
+            end
+            dispField = obj.dispField;
+        end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%% --------------- Methods is separate files --------------- %%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

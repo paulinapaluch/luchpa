@@ -136,14 +136,16 @@ classdef MRViewer3Dt < handle
         
         function parseInputs(input,obj)                         % Parse the inputs given by the user.
             p = inputParser;                                    % Matlabs input parser, see "help inputparser"
-            p.addParameter('backRange',MRViewer3Dt.getRange(obj.backVol),@(x)length(x)==2&x(1)<x(2));
-            p.addParameter('overRange',MRViewer3Dt.getRange(obj.overVol),@(x)length(x)==2&x(1)<x(2));
-            p.addParameter('backMap',gray(256),@(x)ismatrix(x)&size(x,2)==3)
-            p.addParameter('overMap',jet(256),@(x)ismatrix(x)&size(x,2)==3)
-            p.addParameter('maskRange',[],@(x)length(x)==2&x(1)<x(2));
-            p.addParameter('alpha',0.4,@(x)x>=0&x<=1);
-            p.addParameter('aspectRatio',[1 1 1],@(x)length(x)==3);
-            p.addParameter('colorBar',1,@isscalar)
+            if ismethod(p,'addParameter'),myaddParFun = @p.addParameter; % for new Matlab versions
+            else myaddParFun = @p.addParamValue;end             % for old Matlab versions
+            myaddParFun('backRange',MRViewer3Dt.getRange(obj.backVol),@(x)length(x)==2&x(1)<x(2));
+            myaddParFun('overRange',MRViewer3Dt.getRange(obj.overVol),@(x)length(x)==2&x(1)<x(2));
+            myaddParFun('backMap',gray(256),@(x)ismatrix(x)&size(x,2)==3)
+            myaddParFun('overMap',jet(256),@(x)ismatrix(x)&size(x,2)==3)
+            myaddParFun('maskRange',[],@(x)length(x)==2&x(1)<x(2));
+            myaddParFun('alpha',0.4,@(x)x>=0&x<=1);
+            myaddParFun('aspectRatio',[1 1 1],@(x)length(x)==3);
+            myaddParFun('colorBar',1,@isscalar)
             p.parse(input{:});                                  % Parse the input, given parameters set above. If a parameter is not provided, use the default.
             obj.backRange   = p.Results.backRange;              % Set all the parameters.
             obj.overRange   = p.Results.overRange;              % ...

@@ -1,4 +1,4 @@
-classdef MRRoi < matlab.mixin.SetGet
+classdef MRRoi < handle % matlab.mixin.SetGet
     %MRRoi stores cells with points positions
     %
     % Konrad Werys, Feb 2016

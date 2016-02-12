@@ -1,6 +1,8 @@
 function [timesT,timesST] = calcTimes(obj)
 
 if ~isempty(obj.dcmTags)
+    emptyTTidx = cellfun(@isempty,{obj.dcmTags.TriggerTime});
+    [obj.dcmTags(emptyTTidx).TriggerTime]=deal(0);
     timesST = reshape([obj.dcmTags.TriggerTime],size(obj.dcmTags));
     timesT = mean(timesST,1);
 else

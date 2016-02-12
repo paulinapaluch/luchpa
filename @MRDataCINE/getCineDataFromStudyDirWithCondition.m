@@ -29,8 +29,6 @@ idxOK = idxsOK2 & idxsOK3;
 dcmFilenamesCellOK=dcmFilenamesCell(idxOK);
 dcmTagsOK=dcmTagsTemp(1,idxOK);
 
-imageOrientationPatient=[dcmTagsOK.(condFieldName)];
-
 tableToCheck = [dcmTagsOK.(condFieldName)];
 for icond = 1:length(condValueCell)
     condition(icond,:) = tableToCheck==condValueCell{icond};
