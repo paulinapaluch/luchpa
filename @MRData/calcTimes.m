@@ -1,9 +1,14 @@
 function [timesT,timesST] = calcTimes(obj)
 
 if ~isempty(obj.dcmTags)
-    emptyTTidx = cellfun(@isempty,{obj.dcmTags.TriggerTime});
-    [obj.dcmTags(emptyTTidx).TriggerTime]=deal(0);
+    %%% in case there is data with no trigger time, fill empty spaces with
+    %%% zeros
+    idxTIempty = cellfun(@isempty,{obj.dcmTags.TriggerTime});  % find
+    [obj.dcmTags(1,idxTIempty).TriggerTime]=deal(0); % fill with 0
+    
+    %%% simply reshape
     timesST = reshape([obj.dcmTags.TriggerTime],size(obj.dcmTags));
+    %%% simply calc mean over slices
     timesT = mean(timesST,1);
 else
     timesT = 1:obj.nTimes;

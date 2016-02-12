@@ -72,3 +72,4 @@ end
 
 obj.breathShifts=breathShifts;
 obj.shiftRawData;
+obj.dataIso = [];
