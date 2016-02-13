@@ -62,6 +62,7 @@ for n=1:length(N)
 end
 
 saxCineIdx = find(conditionAll);
+disp(['Series: ', num2str(unique([dcmTagsOK(saxCineIdx).SeriesNumber]))])
 
 fprintf('Getting data from dicoms\n')
 

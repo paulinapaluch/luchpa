@@ -1,4 +1,4 @@
-function obj = importMICCAI2009(obj)
+function obj = importRoisMICCAI2009(obj)
 try
     MICCAIdir = obj.miccaiInDir;
     if ~exist(MICCAIdir,'dir')

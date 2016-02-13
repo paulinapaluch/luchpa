@@ -4,7 +4,7 @@ if ~isempty(obj.dcmTags)
     %%% in case there is data with no trigger time, fill empty spaces with
     %%% zeros
     idxTIempty = cellfun(@isempty,{obj.dcmTags.TriggerTime});  % find
-    [obj.dcmTags(1,idxTIempty).TriggerTime]=deal(0); % fill with 0
+    [obj.dcmTags(idxTIempty).TriggerTime]=deal(0); % fill with 0
     
     %%% simply reshape
     timesST = reshape([obj.dcmTags.TriggerTime],size(obj.dcmTags));
