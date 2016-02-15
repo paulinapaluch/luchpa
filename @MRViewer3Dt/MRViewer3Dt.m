@@ -127,8 +127,10 @@ classdef MRViewer3Dt < handle
                 IMG2(isnan(IMG2)) = 1;                          % remove NaNs
                 IMG2 = reshape(obj.overMap(IMG2,:),...          % Get the correct color from the colormap using the index calculated above.
                     [size(IMG2,1),size(IMG2,2),3]);             % ...
-                
-                IMG = IMG1*(1-obj.alpha)+mask.*IMG2*obj.alpha;  % Combine background and overlay, using alpha and mask.
+                IMG_nm = IMG1.*~mask;
+                IMG_mm = (IMG1*(1-obj.alpha)+mask.*IMG2*obj.alpha).*mask;
+                IMG = IMG_nm+IMG_mm;
+                %IMG = IMG1*(1-obj.alpha)+mask.*IMG2*obj.alpha;  % Combine background and overlay, using alpha and mask.
             else
                 IMG = IMG1;                                     % Simple case, only a background is available.
             end
@@ -178,7 +180,6 @@ classdef MRViewer3Dt < handle
                 end
             end
             if length(vS)==3, vS(4)=1;end
-            
             obj.volumeSize = vS;                                % Set the the volume size, this is from now on read only.
             obj.backVol = backVol;                              % Set the background volume
             obj.overVol = overVol;                              % Set the overlay volume.
@@ -253,6 +254,11 @@ classdef MRViewer3Dt < handle
                         obj.axesHandles),'CData',IMG); end      % ... (The 'try' is there in case a window was closed by the user)
             end 
             updateMarkers(obj);                                 % Set the line markers correctly.
+        end
+        
+        function set.volumeSize(obj,vS)
+            if length(vS)==3, vS(4)=1;end
+            obj.volumeSize = vS;
         end
         
         function updateAxesPostion(obj,flagfig)

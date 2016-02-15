@@ -11,18 +11,21 @@ classdef MRV < MRViewer3Dt
     end
     
     properties (SetAccess = private, Hidden = true)             % These properties are private.
-        overDims       = [];
-        currentDim     = [];
-        currentBackIdx =  1;
-        currentOverIdx =  1;
-        endoManHandles = [];
-        epiManHandles  = [];
-        endoAutHandles = [];
-        epiAutHandles  = [];
-        endo           = [];
-        epi            = [];
-        shifts         = [];        % rois (epi and endo) are defined for the raw data. If there were corrections, shifts are needed
-        menuHandles    = [];
+        overDims        = [];
+        currentDim      = [];
+        currentBackIdx  =  1;
+        currentOverIdx  =  1;
+        currentOverDimIdx = [];
+        endoManHandles  = [];
+        epiManHandles   = [];
+        endoAutHandles  = [];
+        epiAutHandles   = [];
+        endo            = [];
+        epi             = [];
+        myoMask         = [];
+        shifts          = [];        % rois (epi and endo) are defined for the raw data. If there were corrections, shifts are needed
+        menuHandles     = [];
+        flags           = [];
     end
     
     methods
@@ -37,7 +40,7 @@ classdef MRV < MRViewer3Dt
             backVol = M.(M.allowedImages{1,1});
             overVol = [];
             overDims=0;
-            if ~isempty(M.(M.numClassName))
+            if ~isempty(M.numClassName) && ~isempty(M.(M.numClassName))
                 temp = M.(M.numClassName).(M.allowedOverlays{1,1})(:,:,:,:,1);
                 if ~isempty(temp) && all(size(temp)==size(backVol)) 
                     overVol = temp;
@@ -46,6 +49,8 @@ classdef MRV < MRViewer3Dt
             end
             obj@MRViewer3Dt(backVol,overVol);
             obj.MRData = M;
+            wc=M.dcmTags(1).WindowCenter;ww=M.dcmTags(1).WindowWidth;
+            obj.setBackRange([wc-ww/2, wc+ww/2]);
             obj.setAspectRatio(M.aspectRatio);
             obj.epi  = obj.MRData.epi;      % 'pointers'
             obj.endo = obj.MRData.endo;     % 'pointers'
@@ -55,6 +60,8 @@ classdef MRV < MRViewer3Dt
             obj.updateMenus;
             obj.initROIs;
             obj.updateROIs;
+            obj.flags.hasChanged = 0;
+            set(obj.figHandle,'CloseRequestFcn',@obj.mrCloseRequestFcn);
         end
         
         function obj = updateMenus(obj)
@@ -101,6 +108,8 @@ classdef MRV < MRViewer3Dt
             uimenu(h.manu,'Label','Delete current epiMan','callback',{@obj.deleteOneContour,'epi'});
             uimenu(h.manu,'Label','Delete current','callback',@obj.deleteOneContour,'Accelerator','d');
             uimenu(h.manu,'Label','Delete EVERYTHING','callback',{@obj.deleteAllCountours});
+            h.mask=uimenu(obj.figHandle,'Label','Mask');
+            uimenu(h.mask,'Label','Mask overlay volume','callback',{@obj.maskOnOff},'Checked','off');
             h.auto=uimenu(obj.figHandle,'Label','Auto operations');
             uimenu(h.auto,'Label','Make contours spline','callback',@mycontour2Spline); %!!!!!
             uimenu(h.auto,'Label','Auto (approximation) LV ALL','callback',@mycontourApproximationAll);
@@ -119,18 +128,18 @@ classdef MRV < MRViewer3Dt
         function initROIs(obj)
             axes(obj.axesHandles(1))
             hold on                                                 % Hold, to initialize rois
-            obj.epiManHandles(1)  = plot(0,0,'.','Color',obj.epi.color);
-            obj.endoManHandles(1) = plot(0,0,'.','Color',obj.endo.color);
+            obj.epiManHandles(1)  = plot(0,0,'-','Color',obj.epi.color);
+            obj.endoManHandles(1) = plot(0,0,'-','Color',obj.endo.color);
             hold off
             axes(obj.axesHandles(2))
             hold on                                                 % Hold, to initialize rois
-            obj.epiManHandles(2)  = plot(0,0,'.','Color',obj.epi.color);
-            obj.endoManHandles(2) = plot(0,0,'.','Color',obj.endo.color);
+            obj.epiManHandles(2)  = plot(0,0,'-','Color',obj.epi.color);
+            obj.endoManHandles(2) = plot(0,0,'-','Color',obj.endo.color);
             hold off
             axes(obj.axesHandles(3))
             hold on                                                 % Hold, to initialize rois
-            obj.epiManHandles(3)  = plot(0,0,'.','Color',obj.epi.color);
-            obj.endoManHandles(3) = plot(0,0,'.','Color',obj.endo.color);
+            obj.epiManHandles(3)  = plot(0,0,'-','Color',obj.epi.color);
+            obj.endoManHandles(3) = plot(0,0,'-','Color',obj.endo.color);
             hold off   
         end
         
@@ -181,7 +190,7 @@ classdef MRV < MRViewer3Dt
                 disp('Not allowed on iso data')
                 return
             end
-            
+            obj.flags.hasChanged = 1;
             contName = varargin{3};
             try
                 pos = obj.(contName).pointsMan{obj.currentPoint(3),obj.currentTime};
@@ -198,6 +207,12 @@ classdef MRV < MRViewer3Dt
             end
         end
         
+        function myoMask = get.myoMask(obj)
+            epiMask  = obj.epi.getMask(obj.volumeSize);
+            endoMask = obj.endo.getMask(obj.volumeSize);
+            myoMask = epiMask & ~endoMask;
+        end
+            
         function deleteOneContour(obj,varargin)
             if all(obj.aspectRatio == [1 1 1])
                 disp('Not allowed on iso data')
@@ -269,9 +284,55 @@ classdef MRV < MRViewer3Dt
                 disp('Different size of back and over volumes')
             end
             obj.currentOverIdx = overIdx;
+            obj.currentOverDimIdx = dimIdx;
         end
         
-        function obj = mrCloseRequestFcn(obj)
+        function obj = maskOnOff(obj,varargin)
+            if ~isempty(obj.overVol)
+                overVol = [];
+                if strcmp(obj.menuHandles.mask.Checked,'off')
+                    obj.menuHandles.mask.Checked = 'on';
+                    overVol = obj.overVol.*obj.myoMask;
+                elseif strcmp(obj.menuHandles.mask.Checked,'on')
+                    obj.menuHandles.mask.Checked = 'off';
+                    overIdx = obj.currentOverIdx;
+                    dimIdx = obj.currentOverDimIdx;
+                    M = obj.MRData;
+                    if isempty(dimIdx)
+                        overVol = M.(M.numClassName).(M.allowedOverlays{overIdx,1});
+                    else
+                        overVol = M.(M.numClassName).(M.allowedOverlays{overIdx,1})(:,:,:,:,dimIdx);
+                    end
+                end
+                if ~isempty(overVol) && all(size(overVol)==size(obj.backVol))
+                    obj.setOverVolume(overVol);
+                    obj.setOverRange(obj.getRange(overVol));
+                    %updateImages(obj)
+                else
+                    disp('Different size of back and over volumes')
+                end
+            end
+        end
+        
+        function obj = mrCloseRequestFcn(obj,varargin)
+            try
+                if obj.flags.hasChanged
+                    answer = questdlg('Save changes?','Save changes','Yes','No','Cancel','Yes');
+                    switch answer
+                        case 'Yes'
+                            obj.MRData.dupaSave;
+                            delete(obj.figHandle);
+                        case 'No'
+                            delete(obj.figHandle);
+                        case 'Cancel'
+                            return
+                    end
+                else
+                    delete(obj.figHandle);
+                end
+            catch ex
+                disp(ex)
+            end
         end
     end
     

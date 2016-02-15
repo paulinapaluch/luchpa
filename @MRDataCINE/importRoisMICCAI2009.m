@@ -44,5 +44,5 @@ catch ex
     keyboard
 end
 
-disp('Imported')
+disp('MICCAI2009 contours imported')
 end

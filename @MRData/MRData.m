@@ -1,4 +1,4 @@
-classdef (Abstract) MRData < handle %matlab.mixin.SetGet
+classdef (Abstract) MRData < handle 
     %MRData is an abstract class, main purpose of its children is to store
     %   data imported from dicoms.
     %
@@ -156,6 +156,7 @@ classdef (Abstract) MRData < handle %matlab.mixin.SetGet
         % load method to be used in children classes. It take a .mat file
         % with one variable saved and loads it 
         function obj = load(mypath,className)
+            disp(mypath)
             %%% a dummy variable used in loadobj method
             dummyvariable694828623=0; %#ok
             obj = [];
@@ -166,6 +167,7 @@ classdef (Abstract) MRData < handle %matlab.mixin.SetGet
                 return
             end
             try
+                fprintf('Loading data from %s\n',filePath)
                 temp = load(filePath);
                 tempfieldname = fieldnames(temp);
                 if length(tempfieldname)>1
@@ -205,10 +207,9 @@ classdef (Abstract) MRData < handle %matlab.mixin.SetGet
         % organize data, so that third dimension is nSlices and fourth is
         % nTimes. In input third diension lenght =1 and 
         % forth diension lenght = nSlices x nTimes
-        [dcmData,dcmTags] = rearrangeCardiacData(dcmData,dcmTags); 
+        [dcmData,dcmTags] = rearrangeCardiacData(dcmData,dcmTags);
+        
+        [dcmData,dcmTags] = rearrangeLGEData(dcmData,dcmTags);
     end
-    
-    
-    
 end
 

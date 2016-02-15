@@ -43,6 +43,7 @@ classdef MRDataCINE < MRData
         miccaiOutDir = [];      % in case miccai 2009 export is needed
         qmassInFile  = [];      % in case qmass import is needed
         qmassOutFile = [];      % in case qmass export is needed
+        autoSegMask  = [];
     end
     
     properties (GetAccess = public, SetAccess = protected, Transient)
@@ -91,7 +92,7 @@ classdef MRDataCINE < MRData
             if isempty(obj.savePath)
                 warning('Probably saving to the wrong path %s',pwd)
             else
-                fprintf('Saving to %s\n',obj.savePath)
+                fprintf('Saving to %s\n',obj.getFullSavePath)
             end
             
             % save DispField separately
@@ -110,6 +111,13 @@ classdef MRDataCINE < MRData
             end
             dispField = obj.dispField;
         end
+        
+        function myoMask = getMyoMask(obj)
+            epiMask  = obj.epi.getMask(size(obj.dataRaw));
+            endoMask = obj.endo.getMask(size(obj.dataRaw));
+            myoMask = epiMask & ~endoMask;
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%% --------------- Methods is separate files --------------- %%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
