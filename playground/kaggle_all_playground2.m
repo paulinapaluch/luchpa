@@ -1,6 +1,3 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% getting data from dicom and getting the contours is done in unit testing
-% classes (see unitTesting folder)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   Konrad Werys, Feb 2016   %
 %   konradwerys@gmail.com    %
@@ -9,15 +6,13 @@
 
 clear
 user = char(java.lang.System.getProperty('user.name'));
-
 switch user
     case 'kwer040'
-        dcmDir = '';
-        matDir = '';
+        matDir  = 'C:\Konrad\MAT\Kaggle';
+        outDir = fullfile('C:\Users\kwer040\Desktop\kaggle',char(datetime('now','format','yyyy_MM_dd')));
     case 'konrad'
-        dcmDir = '/Volumes/My Passport/DCM/Challenges/MICCAI 2009 LV SEG/challenge_online/challenge_online';
-        matDir = '/Volumes/My Passport/MAT/unitTesting/Miccai2009';
-        outDir = fullfile('/Users/konrad/Desktop/miccai2009/',char(datetime('now','format','yyyy_MM_dd')));
+        matDir='';
+        outDir='';
 end
 
 d=dir(matDir);
@@ -32,7 +27,7 @@ for iname=find(~cellfun(@isempty,names'))
     %disp(names{iname})
     mypath = fullfile(matDir,names{iname},'NonameStudy');
     M = MRDataCINE.load(mypath);
-    [cent,harm1mt,mask,mypoly] = MRSegmentation.calcFinalCentroid3d(M.data,M.aspectRatio);
+    [cent,harm1mt,mask,maskTh,mypoly] = MRSegmentation.calcFinalCentroid3d(M.data,M.aspectRatio);
     [harmonics] = MRSegmentation.calcHarmonicsAll(M.data);
     endoMask=M.endo.getManMask(size(M.data));
     ptt = round(cent(end,:));
@@ -77,13 +72,16 @@ for iname=find(~cellfun(@isempty,names'))
 %     plot(p2(2)',p2(1)','ro'),hold off
 %     title([names{iname},' Image'])
     
-    subplot(242),
-    %imshow(M.data(:,:,ptt(3),M.tEndDiastole),[]),hold on,
-    imshow(abs(harm0),[]),hold on
-    plot(cent(:,2),cent(:,1),'o')
-    plot(cent(end,2)',cent(end,1)','go')
-    plot(p2(2)',p2(1)','ro'),hold off
-    title('H0')
+    subplot(242)
+    imshow(bwlabel(maskTh(:,:,ptt(3),1)),[])
+    title('Thresholded')
+%     %imshow(M.data(:,:,ptt(3),M.tEndDiastole),[]),hold on,
+%     imshow(abs(harm0),[]),hold on
+%     plot(cent(:,2),cent(:,1),'o')
+%     plot(cent(end,2)',cent(end,1)','go')
+%     plot(p2(2)',p2(1)','ro'),hold off
+%     title('H0')
+
     
     subplot(245)
     imshow(abs(harmonics(:,:,ptt(3),2)),[]),hold on,
@@ -132,14 +130,3 @@ for iname=find(~cellfun(@isempty,names'))
     
 end
 toc(mytic)
-sum(mytable)/length(mytable)
-%sum(mytable2)/length(mytable2)
-
-% %%
-% iname=7;
-% mypath = fullfile(matDir,names{iname},'NonameStudy');
-% M = MRDataCINE.load(mypath);
-% [cent,harm1mt,mask,line1coors,line2coors] = MRSegmentation.calcFinalCentroid3d(M.data,M.aspectRatio);
-% %V=MRV(M);
-% %V=MRViewer3Dt(M.data,M.autoSegMask)
-

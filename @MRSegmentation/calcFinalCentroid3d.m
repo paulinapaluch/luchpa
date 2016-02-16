@@ -1,4 +1,4 @@
-function [cent,harm1mt,maskSeg,mypoly] = calcFinalCentroid3d(data,aspectRatio)
+function [cent,harm1mt,maskSeg,maskTh,mypoly] = calcFinalCentroid3d(data,aspectRatio)
 line1coors=[];
 line2coors=[];
 
@@ -49,7 +49,7 @@ s = round(cent(iter,3));
 
 %%% GMM
 maskSeg = zeros(size(data));
-maxArea = sum(sum(maskCirc(:,:,s,1)))/3;
+maxArea = sum(sum(maskCirc(:,:,s,1)))*.9;
 maskedDataS=data(:,:,s,1).*maskCirc(:,:,s);
 maskedDataSvec = maskedDataS(find(maskedDataS));
 obj = fitgmdist(maskedDataSvec,3);
@@ -97,7 +97,7 @@ mypoly=[];
 regs = regionprops(BW,'Centroid','ConvexHull','Area');
 BW = bwmorph(BW,'clean');
 if ~isempty(regs)
-    regsCents = cell2mat({regs.Centroid}');
+    regsCents = fliplr(cell2mat({regs.Centroid}')); %%% flip to change index/matrix coordinates
     dist=zeros(1,length(regs));
     for ireg = 1:length(regs)
         dist(ireg) = sqrt(sum((regsCents(ireg,:)-pos).^2));
