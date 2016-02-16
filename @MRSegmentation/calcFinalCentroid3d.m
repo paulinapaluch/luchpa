@@ -1,4 +1,4 @@
-function [cent,harm1mt,maskSeg,line1coors,line2coors] = calcFinalCentroid3d(data,aspectRatio)
+function [cent,harm1mt,maskSeg,mypoly] = calcFinalCentroid3d(data,aspectRatio)
 line1coors=[];
 line2coors=[];
 
@@ -49,6 +49,7 @@ s = round(cent(iter,3));
 
 %%% GMM
 maskSeg = zeros(size(data));
+maxArea = sum(sum(maskCirc(:,:,s,1)))/3;
 maskedDataS=data(:,:,s,1).*maskCirc(:,:,s);
 maskedDataSvec = maskedDataS(find(maskedDataS));
 obj = fitgmdist(maskedDataSvec,3);
@@ -59,120 +60,42 @@ threshold = maxmu*.75;
 maskCirc = repmat(maskCirc,[1,1,1,size(data,4)]); % fill maskCirc in temporal direction
 maskTh = data.*maskCirc>threshold;
 
-% 3d region props, kinda shitty results
-% regs = regionprops(maskTh,'Centroid','PixelIdxList','Area');
-% regsCents = cell2mat({regs.Centroid}');
-% for ireg = 1:length(regs)
-%     dist(ireg) = sqrt(sum((regsCents(ireg,:).*aspectRatio-cent(iter,:).*aspectRatio).^2));
-% end
-% [~,idx] = min(dist);
-% regs(idx)
-
-%mask = bwmorph(mask,'clean');
-
 maskTh = imfill(maskTh,'holes');
 
-[maskSeg(:,:,s,1),newcent{s,1},mypoly{s,1}] = chooseRegClosesTo(maskTh(:,:,s),cent(iter,1:2));
+[maskSeg(:,:,s,1),newcent{s,1},mypoly{s,1}] = chooseRegClosestTo(maskTh(:,:,s,1),cent(iter,1:2),maxArea);
 
 islicesdown = flip(1:s-1);
 islicesup = s+1:size(data,3);
 for s=islicesdown
-    [maskSeg(:,:,s,1),newcent{s,1},mypoly{s,1}] = chooseRegClosesTo(maskTh(:,:,s),newcent{s+1,1});
+    [maskSeg(:,:,s,1),newcent{s,1},mypoly{s,1}] = chooseRegClosestTo(maskTh(:,:,s,1),newcent{s+1,1},maxArea);
 end
 for s=islicesup
-    [maskSeg(:,:,s,1),newcent{s,1},mypoly{s,1}] = chooseRegClosesTo(maskTh(:,:,s),newcent{s-1,1});
-end
-%     
-% regs = regionprops(maskTh(:,:,s),'Centroid','ConvexHull');
-% regsCents = cell2mat({regs.Centroid}');
-% dist=zeros(1,length(regs));
-% for ireg = 1:length(regs)
-%     dist(ireg) = sqrt(sum((regsCents(ireg,:)-cent(iter,1:2)).^2));
-% end
-% 
-% [~,idx] = min(dist);
-% newcent{s,1} = regsCents(idx,:);
-% ch = regs(idx).ConvexHull;
-% mask2d = poly2mask(ch(:,1),ch(:,2),size(data,1),size(data,2));
-% %imshow(mask2d,[])
-% maskSeg(:,:,s,1) = mask2d;
-% 
-% islicesdown = flip(1:s-1);
-% islicesup = s+1:size(data,3);
-% for s=islicesdown
-%     regs = regionprops(maskTh(:,:,s),'Centroid','ConvexHull');
-%     if length(regs)>0
-%         regsCents = cell2mat({regs.Centroid}');
-%         dist=zeros(1,length(regs));
-%         for ireg = 1:length(regs)
-%             dist(ireg) = sqrt(sum((regsCents(ireg,:)-newcent{s+1,1}).^2));
-%         end
-%         [~,idx] = min(dist);
-%         newcent{s,1} = regsCents(idx,:);
-%         ch = regs(idx).ConvexHull;
-%         mask2d = poly2mask(ch(:,1),ch(:,2),size(data,1),size(data,2));
-%         maskSeg(:,:,s,1) = mask2d;
-%     end
-% end
-% for s=islicesup
-%     regs = regionprops(maskTh(:,:,s),'Centroid','ConvexHull');
-%     if length(regs)>0
-%         regsCents = cell2mat({regs.Centroid}');
-%         dist=zeros(1,length(regs));
-%         for ireg = 1:length(regs)
-%             dist(ireg) = sqrt(sum((regsCents(ireg,:)-newcent{s-1,1}).^2));
-%         end
-%         [~,idx] = min(dist);
-%         newcent{s,1} = regsCents(idx,:);
-%         ch = regs(idx).ConvexHull;
-%         mask2d = poly2mask(ch(:,1),ch(:,2),size(data,1),size(data,2));
-%         maskSeg(:,:,s,1) = mask2d;
-%     end
-% end
-
-
-% %%% morphological orientation of the biggest region - not working
-% BW = harm1mt>0;
-% stats = regionprops(imfill(BW(:,:,s),'holes'),'Orientation','Area');
-% [~,idx]=max(cell2mat({stats.Area}'));
-% stats(idx).Orientation;
-% 
-% %%% 3d or 2d PCA - not working
-% [vecs] = calcPCA2d(data(:,:,s,1).*maskTh(:,:,s));
-% for s=1:size(data,3)
-%     p=cents(s,1:2);
-%     %%% line1
-%     p1 = p-vecs(1,1:2)*mydist;
-%     p2 = p+vecs(1,1:2)*mydist;
-%     line1coors{s}(:,1) = linspace(p1(1),p2(1),100);
-%     line1coors{s}(:,2) = linspace(p1(2),p2(2),100);
-%     %%% line2
-%     p1 = p-vecs(2,1:2)*mydist;
-%     p2 = p+vecs(2,1:2)*mydist;
-%     line2coors{s}(:,1) = linspace(p1(1),p2(1),100);
-%     line2coors{s}(:,2) = linspace(p1(2),p2(2),100);
-% end
-
-% clf
-% s = round(cent(iter,3));
-% subplot(121)
-% imshow(data(:,:,s,1),[]),hold on
-% plot(line1coors{s}(:,1),line1coors{s}(:,2),line2coors{s}(:,1),line2coors{s}(:,2),'-'),hold off
-% subplot(122)
-% plot(interp2(data(:,:,s,1),line1coors{s}(:,1),line1coors{s}(:,2))),hold on
-% plot(interp2(data(:,:,s,1),line2coors{s}(:,1),line2coors{s}(:,2))),hold off
-
-
-% vecs(1:3,1:3)
-% sqrt(sum(vecs(:,1:2).^2))
+    [maskSeg(:,:,s,1),newcent{s,1},mypoly{s,1}] = chooseRegClosestTo(maskTh(:,:,s,1),newcent{s-1,1},maxArea);
 end
 
-function [maskConvHull,cent,mypoly] = chooseRegClosesTo(BW,pos)
+for t=2:size(data,4)
+    s = round(cent(iter,3));
+    
+    [maskSeg(:,:,s,t),newcent{s,t},mypoly{s,t}] = chooseRegClosestTo(maskTh(:,:,s,t),cent(iter,1:2),maxArea);
+    islicesdown = flip(1:s-1);
+    islicesup = s+1:size(data,3);
+    for s=islicesdown
+        [maskSeg(:,:,s,t),newcent{s,t},mypoly{s,t}] = chooseRegClosestTo(maskTh(:,:,s,t),newcent{s+1,t},maxArea);
+    end
+    for s=islicesup
+        [maskSeg(:,:,s,t),newcent{s,t},mypoly{s,t}] = chooseRegClosestTo(maskTh(:,:,s,t),newcent{s-1,t},maxArea);
+    end
+end
+
+end
+
+function [maskConvHull,cent,mypoly] = chooseRegClosestTo(BW,pos,maxArea)
 maskConvHull = zeros(size(BW));
 cent = pos;
 mypoly=[];
 
-regs = regionprops(BW,'Centroid','ConvexHull');
+regs = regionprops(BW,'Centroid','ConvexHull','Area');
+BW = bwmorph(BW,'clean');
 if ~isempty(regs)
     regsCents = cell2mat({regs.Centroid}');
     dist=zeros(1,length(regs));
@@ -180,9 +103,15 @@ if ~isempty(regs)
         dist(ireg) = sqrt(sum((regsCents(ireg,:)-pos).^2));
     end
     [~,idx] = min(dist);
+    
+    if regs(idx).Area>maxArea
+        return
+    end
+    
     cent = regsCents(idx,:);
     mypoly = regs(idx).ConvexHull;
     maskConvHull = poly2mask(mypoly(:,1),mypoly(:,2),size(BW,1),size(BW,2));
+   
 end
 end
 

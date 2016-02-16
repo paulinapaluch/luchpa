@@ -70,6 +70,19 @@ classdef MRRoi < handle % matlab.mixin.SetGet
             end
         end
         
+        function mymask = getManMask(R,mysize)
+            mymask = zeros(mysize(1),mysize(2),R.nSlices,R.nTimes);
+            for s=1:R.nSlices
+                for t=1:R.nTimes
+                    if ~isempty(R.pointsMan{s,t})
+                        x=R.pointsMan{s,t}(:,1);
+                        y=R.pointsMan{s,t}(:,2);
+                        mymask(:,:,s,t)=poly2mask(x, y, mysize(1), mysize(2));
+                    end
+                end
+            end
+        end
+        
         function R = approxPoints(R)
         end
         
