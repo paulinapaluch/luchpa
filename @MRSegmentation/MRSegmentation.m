@@ -6,8 +6,8 @@ classdef MRSegmentation
     end
     
     methods (Static)
-        [ centroids, mask ] = calcCentroids( data );
-        [centr,harm1mt] = calcFinalCentroid3d(data);
+        [centroids, mask] = calcCentroids(data);
+        [centr,harm1mt,mask,line1coors,line2coors] = calcFinalCentroid3d(data, aspectRatio);
         
         function [harmAll] = calcHarmonicsAll(data)
             harmAll = abs(fft(data,[],4));

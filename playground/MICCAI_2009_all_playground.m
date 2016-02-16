@@ -17,7 +17,7 @@ switch user
     case 'konrad'
         dcmDir = '/Volumes/My Passport/DCM/Challenges/MICCAI 2009 LV SEG/challenge_online/challenge_online';
         matDir = '/Volumes/My Passport/MAT/unitTesting/Miccai2009';
-        outDir = '/Users/konrad/Desktop/miccai2009/20160215';
+        outDir = fullfile('/Users/konrad/Desktop/miccai2009/',char(datetime('now','format','yyyy_MM_dd')));
 end
 
 d=dir(matDir);
@@ -25,18 +25,19 @@ names = {d.name}';
 names(ismember(names,{'.','..'}))=[];
 
 %%
+mytic = tic;
 mytable = zeros(1,length(names));
 mytable2 = zeros(1,length(names));
 for iname=find(~cellfun(@isempty,names'))
     %disp(names{iname})
     mypath = fullfile(matDir,names{iname},'NonameStudy');
     M = MRDataCINE.load(mypath);
-    [cent,harm1mt] = MRSegmentation.calcFinalCentroid3d(M.data);
+    [cent,harm1mt,mask,line1coors,line2coors] = MRSegmentation.calcFinalCentroid3d(M.data,M.aspectRatio);
     [harmonics] = MRSegmentation.calcHarmonicsAll(M.data);
     endoMask=M.endo.getMask(size(M.data));
     ptt = round(cent(end,:));
 
-    
+    s = ptt(3);
     harm0=harmonics(:,:,ptt(3),1);
     data_temp = sum(M.data(:,:,ptt(3),:),4);
     
@@ -46,11 +47,11 @@ for iname=find(~cellfun(@isempty,names'))
     p2(4) = 1;
     ptt2 = round(p2);
     
-    reg_maxdist = max(M.data(:))/10;
-    tic
-    mask4d_temp = MRSegmentation.regionGrowing2Dplus(M.data,p2,reg_maxdist);
-    toc
-    M.autoSegMask = mask4d_temp;
+%     reg_maxdist = max(M.data(:))/10;
+%     tic
+%     mask4d_temp = MRSegmentation.regionGrowing2Dplus(M.data,p2,reg_maxdist);
+%     toc
+    M.autoSegMask = mask;
     M.dupaSave;
     
     if endoMask(ptt(1),ptt(2),ptt(3),M.tEndDiastole)
@@ -60,7 +61,7 @@ for iname=find(~cellfun(@isempty,names'))
         mytable2(iname)=1;
     end
     
-    subplot(221),
+    subplot(231),
     %imshow(M.data(:,:,ptt(3),M.tEndDiastole),[]),hold on,
     imshow(data_temp,[]),hold on
     plot(cent(:,2),cent(:,1),'o')
@@ -68,7 +69,7 @@ for iname=find(~cellfun(@isempty,names'))
     plot(p2(2)',p2(1)','ro'),hold off
     title([names{iname},' Image'])
     
-    subplot(222),
+    subplot(232),
     %imshow(M.data(:,:,ptt(3),M.tEndDiastole),[]),hold on,
     imshow(abs(harm0),[]),hold on
     plot(cent(:,2),cent(:,1),'o')
@@ -76,31 +77,40 @@ for iname=find(~cellfun(@isempty,names'))
     plot(p2(2)',p2(1)','ro'),hold off
     title('H0')
     
-    subplot(223)
+    subplot(234)
     imshow(abs(harmonics(:,:,ptt(3),2)),[]),hold on,
     plot(cent(:,2),cent(:,1),'o')
     plot(cent(end,2)',cent(end,1)','go')
     plot(p2(2)',p2(1)','ro'),hold off
     title('H1')
     
-    subplot(224)
+    subplot(235)
     imshow(harm1mt(:,:,ptt(3)),[]),hold on
     plot(cent(:,2),cent(:,1),'o')
     plot(cent(end,2)',cent(end,1)','go')
     plot(p2(2)',p2(1)','ro'),hold off
     title('final H1')
-    
+
+    subplot(233)
+    imshow(M.data(:,:,s,1).*mask(:,:,s),[]),hold on
+    imshow(mask(:,:,s),[]),hold on
+    %plot(line1coors{s}(:,1),line1coors{s}(:,2),line2coors{s}(:,1),line2coors{s}(:,2),'-'),hold off
+    subplot(236)
+    %plot(interp2(M.data(:,:,s,1),line1coors{s}(:,1),line1coors{s}(:,2))),hold on
+    %plot(interp2(M.data(:,:,s,1),line2coors{s}(:,1),line2coors{s}(:,2))),hold off
+
+    drawnow
+    if ~exist(outDir,'dir'),mkdir(outDir);end
     outfile = fullfile(outDir,names{iname});
     print('-dpng',outfile)
-    drawnow
+    
 end
+toc(mytic)
 sum(mytable)/length(mytable)
 sum(mytable2)/length(mytable2)
+
 %%
-
-
-% %%
-% iname=41;
+% iname=4;
 % mypath = fullfile(matDir,names{iname},'NonameStudy');
 % M = MRDataCINE.load(mypath);
 % V=MRV(M);

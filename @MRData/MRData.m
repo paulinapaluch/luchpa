@@ -156,7 +156,7 @@ classdef (Abstract) MRData < handle
         % load method to be used in children classes. It take a .mat file
         % with one variable saved and loads it 
         function obj = load(mypath,className)
-            disp(mypath)
+            %disp(mypath)
             %%% a dummy variable used in loadobj method
             dummyvariable694828623=0; %#ok
             obj = [];
