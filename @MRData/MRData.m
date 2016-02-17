@@ -119,7 +119,7 @@ classdef (Abstract) MRData < handle
             dirpath = obj.getFullSavePath;
             filepath = fullfile(dirpath,[obj.className,'.mat']);
             if ~exist(dirpath,'dir'),mkdir(dirpath);end
-            save(filepath,'obj');
+            save(filepath,'obj','-v7.3');
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

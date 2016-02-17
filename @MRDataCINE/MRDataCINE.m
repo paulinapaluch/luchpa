@@ -118,6 +118,21 @@ classdef MRDataCINE < MRData
             myoMask = epiMask & ~endoMask;
         end
         
+        function volumes = getVolumes(obj)
+            volumes = squeeze(sum(sum(sum(obj.autoSegMask,1),2),3));
+            volumes = volumes.*obj.aspectRatio(1)*obj.aspectRatio(2)*obj.aspectRatio(3)/1000;
+        end
+        
+        function [volES,tES] = getESVolume(obj)
+            volumes = obj.getVolumes;
+            [volES,tES] = min(volumes);
+        end
+        
+        function [volED,tED] = getEDVolume(obj)
+            volumes = obj.getVolumes;
+            [volED,tED] = max(volumes);
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%% --------------- Methods is separate files --------------- %%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

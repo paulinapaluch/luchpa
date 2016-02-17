@@ -13,6 +13,15 @@ classdef MRSegmentation
             harmAll = abs(fft(data,[],4));
         end
         
+        function [harmOne] = calcHarmonicsOne(data,harmNr)
+            % if the system does not have lots of ram
+            harmOne=zeros(size(data,1),size(data,2),size(data,3));
+            for s=1:size(data,3)
+                temp = abs(fft(data(:,:,s,:),[],4));
+                harmOne(:,:,s) = squeeze(temp(:,:,1,harmNr));
+            end
+        end
+        
         function [mask4d] = regionGrowing2Dplus(data4d,seed0,reg_maxdist)
             mask4d = zeros(size(data4d));
             [nX,nY,nSlices,nTimes] = size(data4d);
@@ -85,8 +94,6 @@ classdef MRSegmentation
             end
             fprintf('\n')
         end
-        
     end
-    
 end
 

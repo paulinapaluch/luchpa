@@ -48,7 +48,7 @@ fprintf('Iterations %d, distance %.2f\n',iter, mydistmm)
 s = round(cent(iter,3));
 
 %%% GMM
-maskSeg = zeros(size(data));
+maskSeg = logical(zeros(size(data)));
 maxArea = sum(sum(maskCirc(:,:,s,1)))*.9;
 maskedDataS=data(:,:,s,1).*maskCirc(:,:,s);
 maskedDataSvec = maskedDataS(find(maskedDataS));
@@ -140,14 +140,15 @@ lr(:,2) = m(2) + p(2)*t;
 end
 
 function [harm1m] = calcFilteredHarmonic(data)
-[harmAll] = MRSegmentation.calcHarmonicsAll(data);
-harm1 = harmAll(:,:,:,2);
 
-harm1m = harm1;
+[harm1] = MRSegmentation.calcHarmonicsOne(data,2);
+harm1m = zeros(size(harm1));
+
 for s=1:size(harm1,3)
     harm1m(:,:,s) = imgaussfilt(harm1(:,:,s));
 end
 harm1m(harm1m<max(harm1m(:))*.05)=0;
+
 end
 
 function distr = calcDistr(data,lr)
