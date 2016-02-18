@@ -4,11 +4,14 @@
 %   <mrkonrad.github.io>     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%%
+%%% train %%%
+%%%%%%%%%%%%%
 clear
 user = char(java.lang.System.getProperty('user.name'));
 switch user
     case 'kwer040'
-        matDir  = 'C:\Konrad\MAT\Kaggle';
+        matDir  = 'C:\Konrad\MAT\Kaggle\train';
         outDir = fullfile('C:\Users\kwer040\Desktop\kaggle',char(datetime('now','format','yyyy_MM_dd')));
     case 'konrad'
         matDir='';

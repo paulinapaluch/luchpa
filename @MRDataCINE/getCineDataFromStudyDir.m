@@ -35,6 +35,7 @@ imageOrientationPatient=[dcmTagsOK.ImageOrientationPatient];
 cardiacNumberOfImages = [dcmTagsOK.(CardiacNumberOfImagesField)];
 %instanceNumbers = [dcmTags(1,idxOK).InstanceNumber];
 %triggerTimes = [dcmTags(1,idxOK).TriggerTime];
+pixelSpacing = [dcmTagsOK.PixelSpacing]';
 
 if isfield(dcmTagsOK,'InversionTime')
     idxTIempty = cellfun(@isempty,{dcmTagsOK.InversionTime}); % find tags idxs with empty inversion time
@@ -51,13 +52,19 @@ condition3 = inversionTimes==0; % cannot have inversion time (to eliminate TI sc
 
 roundedImageOrientetionPatient = round(1e3*imageOrientationPatient')/1e3; % allowing precision of the same orientation to be 1e-6
 [uniqueImageOrientationPatientStr,~,ic] = unique(roundedImageOrientetionPatient,'rows'); 
-[N,~,bins]=histcounts(ic,length(uniqueImageOrientationPatientStr));
+[nIOPs,~,binsIOP]=histcounts(ic,length(uniqueImageOrientationPatientStr));
+
+[uniquePixelSpacing,~,ic] = unique(pixelSpacing,'rows'); 
+[nPSs,~,binsPS]=histcounts(ic,length(uniquePixelSpacing));
+[~,idxPS] = max(nPSs);
+condition4 = (binsPS==idxPS)'; % has to have the same pixel spacing. group with most numerous number of pixel spacing is chosen
 
 conditionAll = zeros(size(condition1));
-for n=1:length(N)
-    condition2=(bins==n)'; % most images with the same orientation
+for n=1:length(nIOPs)
+    condition2=(binsIOP==n)'; % most images with the same orientation
+    
     if sum(conditionAll)<sum(condition1 & condition2 & condition3);
-        conditionAll=condition1 & condition2 & condition3;
+        conditionAll=condition1 & condition2 & condition3 & condition4;
     end
 end
 
