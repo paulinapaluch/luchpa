@@ -15,8 +15,8 @@ switch user
         matDir  = 'C:\Konrad\MAT\Kaggle\train';
         outDir = fullfile('C:\Users\kwer040\Desktop\kaggle',char(datetime('now','format','yyyy_MM_dd')));
     case 'konrad'
-        matDir='';
-        outDir='';
+        matDir='/Volumes/My Passport/DCM/Kaggle/train';
+        outDir='/Volumes/My Passport/MAT/Kaggle/train';
 end
 
 d=dir(matDir);
@@ -67,3 +67,5 @@ myGT = GT(:);myGT=myGT(1:size(mycdf2,1));
 [crps_mean,crps_values]=crps(mycdf,myGT,'ecdf');
 disp(crps_mean);
 %plot(crps_values)
+
+i=10;a=rand(1,i);for ii=1:i,beep,pause(a(ii)),end

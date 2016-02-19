@@ -33,15 +33,13 @@ for iname=allnames
     disp(names{iname})
     mypath = fullfile(matDir,names{iname},'NonameStudy');
     M = MRDataCINE.load(mypath);
-    [cent,harm1mt,mask,maskTh,mypoly] = MRSegmentation.calcFinalCentroid3d(M.data,M.aspectRatio);
+    [cent,harm1mt,mask,maskTh,mypoly] = MRSegmentation.calcFinalCentroid3d(M.dataRaw,M.aspectRatio);
     
     M.autoSegMask = mask;
     M.endo.pointsAut = mypoly;
     kagglePlot(M,harm1mt,maskTh,cent,[names{iname}])
     
     M.dupaSave;
-    
-    
     
 %     s = ptt(3);
 %     harm0= MRSegmentation.calcHarmonicsOne(M.data(:,:,ptt(3),:),1);
@@ -51,7 +49,6 @@ for iname=allnames
 %     p2=fminsearch(@(p)myfun2(p,data_temp),[cent(end,1),cent(end,2)]);
 %     p2(3) = ptt(3);p2(4) = 1;ptt2 = round(p2);
 
-    
     if ~exist(outDir,'dir'),mkdir(outDir);end
     outfile = fullfile(outDir,names{iname});
     print('-dpng',outfile)
@@ -68,3 +65,4 @@ toc(mytic)
 % %V=MRV(M);
 % %V=MRViewer3Dt(M.data,M.autoSegMask)
 
+% close all, V=MRV(M),V.backRange=V.backRange./4;V.setOverVolume(M.autoSegMask);V.maskRange = [0 0.5]

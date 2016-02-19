@@ -128,19 +128,25 @@ classdef MRV < MRViewer3Dt
         function initROIs(obj)
             axes(obj.axesHandles(1))
             hold on                                                 % Hold, to initialize rois
-            obj.epiManHandles(1)  = plot(0,0,'-','Color',obj.epi.color);
-            obj.endoManHandles(1) = plot(0,0,'-','Color',obj.endo.color);
+            obj.epiManHandles(1)  = plot(0,0,'--','Color',obj.epi.color);
+            obj.endoManHandles(1) = plot(0,0,'--','Color',obj.endo.color);
+            obj.epiAutHandles(1)  = plot(0,0,'-','Color',obj.epi.color);
+            obj.endoAutHandles(1) = plot(0,0,'-','Color',obj.endo.color);
             hold off
             axes(obj.axesHandles(2))
             hold on                                                 % Hold, to initialize rois
-            obj.epiManHandles(2)  = plot(0,0,'-','Color',obj.epi.color);
-            obj.endoManHandles(2) = plot(0,0,'-','Color',obj.endo.color);
+            obj.epiManHandles(2)  = plot(0,0,'--','Color',obj.epi.color);
+            obj.endoManHandles(2) = plot(0,0,'--','Color',obj.endo.color);
+            obj.epiAutHandles(2)  = plot(0,0,'-','Color',obj.epi.color);
+            obj.endoAutHandles(2) = plot(0,0,'-','Color',obj.endo.color);
             hold off
             axes(obj.axesHandles(3))
             hold on                                                 % Hold, to initialize rois
-            obj.epiManHandles(3)  = plot(0,0,'-','Color',obj.epi.color);
-            obj.endoManHandles(3) = plot(0,0,'-','Color',obj.endo.color);
-            hold off   
+            obj.epiManHandles(3)  = plot(0,0,'--','Color',obj.epi.color);
+            obj.endoManHandles(3) = plot(0,0,'--','Color',obj.endo.color);
+            obj.epiAutHandles(3)  = plot(0,0,'-','Color',obj.epi.color);
+            obj.endoAutHandles(3) = plot(0,0,'-','Color',obj.endo.color);
+            hold off
         end
         
         function updateImages(obj,axIdx)                         % Function to update the images
@@ -161,24 +167,43 @@ classdef MRV < MRViewer3Dt
                 sliceIdx=obj.currentPoint(3);
             end
             
-            epi_temp = obj.epi.pointsMan{sliceIdx,obj.currentTime};
-            endo_temp = obj.endo.pointsMan{sliceIdx,obj.currentTime};
+            epiMan_temp = obj.epi.pointsMan{sliceIdx,obj.currentTime};
+            endoMan_temp = obj.endo.pointsMan{sliceIdx,obj.currentTime};
+            epiAut_temp = obj.epi.pointsAut{sliceIdx,obj.currentTime};
+            endoAut_temp = obj.endo.pointsAut{sliceIdx,obj.currentTime};
             shift_temp = obj.shifts(sliceIdx,:);
             try
-                if ~isempty(epi_temp)
-                    
-                    set(obj.epiManHandles(3),'XData',[epi_temp(:,1);epi_temp(1,1)]-shift_temp(2))
-                    set(obj.epiManHandles(3),'YData',[epi_temp(:,2);epi_temp(1,2)]-shift_temp(1))
+                %%% EPI MANUAL
+                if ~isempty(epiMan_temp)
+                    set(obj.epiManHandles(3),'XData',[epiMan_temp(:,1);epiMan_temp(1,1)]-shift_temp(2))
+                    set(obj.epiManHandles(3),'YData',[epiMan_temp(:,2);epiMan_temp(1,2)]-shift_temp(1))
                 else
                     set(obj.epiManHandles(3),'XData',0)
                     set(obj.epiManHandles(3),'YData',0)
                 end
-                if ~isempty(endo_temp)
-                    set(obj.endoManHandles(3),'XData',[endo_temp(:,1);endo_temp(1,1)]-shift_temp(2))
-                    set(obj.endoManHandles(3),'YData',[endo_temp(:,2);endo_temp(1,2)]-shift_temp(1))
+                %%% ENDO MANUAL
+                if ~isempty(endoMan_temp)
+                    set(obj.endoManHandles(3),'XData',[endoMan_temp(:,1);endoMan_temp(1,1)]-shift_temp(2))
+                    set(obj.endoManHandles(3),'YData',[endoMan_temp(:,2);endoMan_temp(1,2)]-shift_temp(1))
                 else
                     set(obj.endoManHandles(3),'XData',0)
                     set(obj.endoManHandles(3),'YData',0)
+                end
+                %%% EPI AUTOMATIC
+                if ~isempty(epiAut_temp)
+                    set(obj.epiAutHandles(3),'XData',[epiAut_temp(:,1);epiAut_temp(1,1)]-shift_temp(2))
+                    set(obj.epiAutHandles(3),'YData',[epiAut_temp(:,2);epiAut_temp(1,2)]-shift_temp(1))
+                else
+                    set(obj.epiAutHandles(3),'XData',0)
+                    set(obj.epiAutHandles(3),'YData',0)
+                end
+                %%% ENDO AUTOMATIC
+                if ~isempty(endoAut_temp)
+                    set(obj.endoAutHandles(3),'XData',[endoAut_temp(:,1);endoAut_temp(1,1)])%%% !!!
+                    set(obj.endoAutHandles(3),'YData',[endoAut_temp(:,2);endoAut_temp(1,2)])
+                else
+                    set(obj.endoAutHandles(3),'XData',0)
+                    set(obj.endoAutHandles(3),'YData',0)
                 end
             catch ex
                 ex

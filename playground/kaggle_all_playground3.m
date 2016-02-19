@@ -15,8 +15,8 @@ switch user
         matDir  = 'C:\Konrad\MAT\Kaggle\validate';
         outDir = fullfile('C:\Users\kwer040\Desktop\kaggle',char(datetime('now','format','yyyy_MM_dd')));
     case 'konrad'
-        matDir='';
-        outDir='';
+        matDir='/Volumes/My Passport/DCM/Kaggle/validate';
+        outDir='/Volumes/My Passport/MAT/Kaggle/validate';
 end
 
 d=dir(matDir);
@@ -86,3 +86,5 @@ for iname=1:size(mycdf,1)
     fprintf(fid,'\n');
 end
 fclose(fid);
+
+i=10;a=rand(1,i);for ii=1:i,beep,pause(a(ii)),end

@@ -9,7 +9,7 @@ harm1mt=harm1m;
 iter=1;
 centDist = inf;
 mydistmm = inf;
-mymulti0 = 2;
+mymulti0 = 1.5;
 mymulti = mymulti0;
 
 while (centDist>1 || mydistmm>70) && iter<100
@@ -53,67 +53,79 @@ maxArea = sum(sum(maskCirc(:,:,s,1)))*.9;
 maskedDataS=data(:,:,s,1).*maskCirc(:,:,s);
 maskedDataSvec = maskedDataS(find(maskedDataS));
 obj = fitgmdist(maskedDataSvec,3);
-[maxmu,idxmaxmu] = max(obj.mu);
-sigma = obj.Sigma(1,1,idxmaxmu);
-threshold = maxmu*.75;
-At=3; % area multiplyer
+mus = sort(obj.mu);
+threshold = (mus(1)+mus(2))/2;
+%[maxmu,idxmaxmu] = max(obj.mu);
+%sigma = obj.Sigma(1,1,idxmaxmu);
+%threshold = maxmu*.5;
+minAreaFirst = 25/(aspectRatio(1)^2); % minimal area in first slice is 25mm2
+At=2; % area multiplyer
+morphRadius = ceil(1/aspectRatio(1));
+morphSE = strel('disk',morphRadius);
 
 maskCirc = repmat(maskCirc,[1,1,1,size(data,4)]); % fill maskCirc in temporal direction
 maskTh = data.*maskCirc>threshold;
 
-maskTh = imfill(maskTh,'holes');
-
 [maskSeg(:,:,s,1),newcent{s,1},mypoly{s,1},mA{s,1}] ...
-    = chooseRegClosestTo(maskTh(:,:,s,1),cent(iter,1:2),0,maxArea);
+    = chooseRegClosestTo(maskTh(:,:,s,1),cent(iter,1:2),minAreaFirst,maxArea,morphSE);
 
 islicesdown = flip(1:s-1);
 islicesup = s+1:size(data,3);
 for s=islicesdown
     [maskSeg(:,:,s,1),newcent{s,1},mypoly{s,1},mA{s,1}] ...
-        = chooseRegClosestTo(maskTh(:,:,s,1),newcent{s+1,1},mA{s+1,1}/At,mA{s+1,1}*At);
+        = chooseRegClosestTo(maskTh(:,:,s,1),newcent{s+1,1},mA{s+1,1}/At,mA{s+1,1}*At,morphSE);
 end
 for s=islicesup
     [maskSeg(:,:,s,1),newcent{s,1},mypoly{s,1},mA{s,1}] ...
-        = chooseRegClosestTo(maskTh(:,:,s,1),newcent{s-1,1},mA{s-1,1}/At,mA{s-1,1}*At);
+        = chooseRegClosestTo(maskTh(:,:,s,1),newcent{s-1,1},mA{s-1,1}/At,mA{s-1,1}*At,morphSE);
 end
 
 for t=2:size(data,4)
     s = round(cent(iter,3));
     [maskSeg(:,:,s,t),newcent{s,t},mypoly{s,t},mA{s,t}] ...
-        = chooseRegClosestTo(maskTh(:,:,s,t),newcent{s,t-1},0,mA{s,t-1}*At);
+        = chooseRegClosestTo(maskTh(:,:,s,t),newcent{s,t-1},0,mA{s,t-1}*At,morphSE);
     islicesdown = flip(1:s-1);
     islicesup = s+1:size(data,3);
     for s=islicesdown
         [maskSeg(:,:,s,t),newcent{s,t},mypoly{s,t},mA{s,t}] ...
-            = chooseRegClosestTo(maskTh(:,:,s,t),newcent{s+1,t},mA{s+1,t}/At,mA{s+1,t}*At);
+            = chooseRegClosestTo(maskTh(:,:,s,t),newcent{s+1,t},mA{s+1,t}/At,mA{s+1,t}*At,morphSE);
     end
     for s=islicesup
         [maskSeg(:,:,s,t),newcent{s,t},mypoly{s,t},mA{s,t}] ...
-            = chooseRegClosestTo(maskTh(:,:,s,t),newcent{s-1,t},mA{s-1,t}/At,mA{s-1,t}*At);
+            = chooseRegClosestTo(maskTh(:,:,s,t),newcent{s-1,t},mA{s-1,t}/At,mA{s-1,t}*At,morphSE);
     end
 end
 
 end
 
-function [maskConvHull,cent,mypoly,mA] = chooseRegClosestTo(BW,pos,minArea,maxArea)
+function [maskConvHull,cent,mypoly,mA] = chooseRegClosestTo(BW,pos,minArea,maxArea,morphSE)
 maskConvHull = zeros(size(BW));
 cent = pos;
 mypoly=[];
 mA = 0;
 
 BW = bwmorph(BW,'clean');
-BW = bwmorph(BW,'open');
-regs = regionprops(BW,'Centroid','ConvexHull','Area');
+BW = imfill(BW,'holes');
+BW = imclose(BW,morphSE);
+%BW = imopen(BW,morphSE);
+
+regs = regionprops(BW,'Centroid','ConvexHull','Area','Eccentricity');
 
 if ~isempty(regs)
     regsCents = fliplr(cell2mat({regs.Centroid}')); %%% flip to change index/matrix coordinates
+    regsEccen = cell2mat({regs.Eccentricity});
+    regsArea  = cell2mat({regs.Area});
     dist=zeros(1,length(regs));
     for ireg = 1:length(regs)
         dist(ireg) = sqrt(sum((regsCents(ireg,:)-pos).^2));
     end
-    [~,idx] = min(dist);
+    distn = dist./max(dist(:));
+    areaFun = @(ain,amin,amax)((ain-amin)/(amax+amin) - .5).^2;
     
-    if regs(idx).Area>maxArea || regs(idx).Area<minArea
+    myenergy = 2*distn + .5*regsEccen + .5*areaFun(regsArea,minArea,maxArea);
+    [~,idx] = min(myenergy);
+    
+    if regsArea(idx)>maxArea || regsArea(idx)<minArea
         return
     end
     

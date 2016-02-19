@@ -58,7 +58,7 @@ for iname=3%find(~cellfun(@isempty,nameSeries))
 end
 
 %% CALCULATE SCAR
-for iname=8%find(~cellfun(@isempty,nameSeries))
+for iname=16%find(~cellfun(@isempty,nameSeries))
     mypath = fullfile(matDir,nameSeries{iname}{1},'NonameStudy');
     M = MRDataLGE.load(mypath);
     M.data;
