@@ -30,7 +30,7 @@ for iname=find(~cellfun(@isempty,names'))
     disp(names{iname})
     mypath = fullfile(matDir,names{iname},'NonameStudy');
     M = MRDataCINE.load(mypath);
-    M.calcbreathingCorrection;
+    %M.calcbreathingCorrection;
     [cent,harm1mt,mask,maskTh,mypoly] = MRSegmentation.calcFinalCentroid3d(M.data,M.aspectRatio);  
     M.autoSegMask = mask;
     M.endo.pointsAut = mypoly;
@@ -49,21 +49,16 @@ end
 toc(mytic)
 
 %% calculate cdf
-mystd = 25;
-volED(volED>600-mystd)=600-mystd;
-volED(volED<mystd)=mystd;
-volES(volES>600-mystd)=600-mystd;
-volES(volES<mystd)=mystd;
 for iname=find(~cellfun(@isempty,names'))
-    mycdf((iname-1)*2+1,:) = normcdf(1:600,volED(iname),mystd);
-    mycdf((iname-1)*2+2,:) = normcdf(1:600,volES(iname),mystd);
-    myname{(iname-1)*2+1} = sprintf('%d_Diastole',iname);
-    myname{(iname-1)*2+2} = sprintf('%d_Systole',iname);
+    mycdf((iname-1)*2+1,:) = normcdf(1:600,volED(iname),2);
+    mycdf((iname-1)*2+2,:) = normcdf(1:600,volES(iname),volES(iname));
+    myname{(iname-1)*2+1} = sprintf('%d_Diastole',iname+500);
+    myname{(iname-1)*2+2} = sprintf('%d_Systole',iname+500);
 end
 
 %%
 load('kaggleTestGT')
 myGT = GT(:);myGT=myGT(1:size(mycdf2,1));
-[crps_mean,crps_values]=crps(mycdf,myGT,'ecdf');
+[crps_mean,crps_values]=crps(mycdf2,myGT,'ecdf');
 disp(crps_mean);
 %plot(crps_values)

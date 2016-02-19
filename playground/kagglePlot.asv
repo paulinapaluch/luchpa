@@ -51,20 +51,18 @@ hax(7) = subplot(247);cla
 p = patch(isosurface(M.autoSegMask(:,:,:,1)));title('First')
 p.FaceColor = 'red';
 p.EdgeColor = 'none';
+axis([0 M.nYs 0 M.nXs 0 M.nSlices])
 set(gca,'ZDir','reverse');
-view(3),l = light;lightangle(l,90,30)
-axis('tight')
-zlim([1 M.nSlices])
+l = light;lightangle(l,90,30)
 
 hax(8) = subplot(248);cla
 p = patch(isosurface(M.autoSegMask(:,:,:,tSys)));title('ES')
 p.FaceColor = 'red';
 p.EdgeColor = 'none';
-%set(gca,'DataAspectRatio',1./M.aspectRatio)
+%axis([0 M.nYs 0 M.nXs 0 M.nSlices])
+set(gca,'DataAspectRatio',1./M.aspectRatio)
 set(gca,'ZDir','reverse');
-view(3),l = light;lightangle(l,90,30)
-axis('tight')
-zlim([1 M.nSlices])
+l = light;lightangle(l,90,30)
 
 colormap jet
 drawnow
