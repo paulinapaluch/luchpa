@@ -14,29 +14,15 @@ classdef MRDataCINE < MRData
     % <mrkonrad.github.io>
     
     properties (Constant)
-        % this is visible from class, >> MRDispField.allowedImages
+        % this is visible from class, >> MRDispField.roiList
         className   = 'MRDataCINE';
-        numClassName = 'dispField';
-
-        allowedImages = {...   % working on MRDataCINE object, fe. M.(allowedImages(1,1))
-            'data',   'Data with corrections','useAspectRatio';...
-            'dataRaw','Data from dicom','useAspectRatio';...
-            'dataIso','Data with corrections isotropic (interpolated)',''};
-        allowedOverlays = {... % working on MRDispField object within MRDataCINE object, fe. M.dispField.(allowedImages(1,1))
-            'empty',  'None',   1;...
-            'back',   'back',   3;...
-            'forw',   'forw',   3;...
-            ...%'comb','comb',3;...
-            'magBack','magBack',1;...
-            'magForw','magForw',1};...
-            %'magComb','magComb',1}
-        % I think I should add 'mother data' to allowed overlays. backDF
-        % calculated on dataRaw should not be used on shifted data
+        roiList = {...
+            'epi',  'green';...
+            'endo', 'red';...
+            };
     end
     
     properties
-        epi          = [];      % epicardial MRRoi object
-        endo         = [];      % endocardial MRRoi object
         tEndSystole  = [];      % end systole per slice
         tEndDiastole = [];      % end diastole per slice
         miccaiInDir  = [];      % in case miccai 2009 import is needed
@@ -48,9 +34,30 @@ classdef MRDataCINE < MRData
     
     properties (GetAccess = public, SetAccess = protected, Transient)
         dispField    = [];      % MRDispField object
+        rois         = [];      % vector with rois
     end
     
     methods 
+        function ai = allowedImages(self)
+            ai = {...
+                g(@self.data),   'Corrected data',          'useAspectRatio';...
+                g(@self.dataRaw),'Data from dicom',         'useAspectRatio';...
+                g(@self.dataIso),'Corrected data isotropic',''              ;...
+                };
+        end
+        
+        function ao = allowedOverlays(self)
+            % % I think I should add 'mother data' to allowed overlays. backDF
+            % % calculated on dataRaw should not be used on shifted data
+            ao = {...
+                g(@self.dispField.empty), 'empty', 1        ;...
+                g(@self.dispField.back),  'back',  3        ;...
+                g(@self.dispField.forw),  'forw',  3        ;...
+                g(@self.dispField.magBack), 'magBack', 1    ;...
+                g(@self.dispField.magForw), 'magForw', 1    ;...
+                };
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%% ---------------------- CONSTRUCTOR ---------------------- %%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,8 +85,15 @@ classdef MRDataCINE < MRData
             obj.calcSliceDistances;
             obj.calcTimes;
             obj.dispField = MRDispField(obj);
-            obj.epi  = MRRoi(obj.nSlices,obj.nTimes,'Epi','green');
-            obj.endo = MRRoi(obj.nSlices,obj.nTimes,'Endo','red');
+            %%% ready the rois
+            rl = MRDataCINE.roiList;
+            
+            for iroi=1:size(rl,1)
+                temp(iroi) = MRRoi(obj.nSlices,obj.nTimes,rl{iroi,1},rl{iroi,2});
+            end
+            obj.rois = temp;
+%             obj.epi  = MRRoi(obj.nSlices,obj.nTimes,'Epi','green');
+%             obj.endo = MRRoi(obj.nSlices,obj.nTimes,'Endo','red');
             obj.dupaSave;
         end
         
@@ -112,9 +126,35 @@ classdef MRDataCINE < MRData
             dispField = obj.dispField;
         end
         
+        function myroi = getROI(obj,val)
+            % returns roi object
+            % val can be roi number or roi name from MRDataCine.roiList
+            myroi = [];
+            if isnumeric(val) && length(val)==1
+                myroi = obj.rois(val);
+            elseif ischar(val)
+                idx = find(strcmp(MRDataCINE.roiList(:,1),val),1,'first');
+                myroi = obj.rois(idx);
+            end
+        end
+        
+        function setRoiPoints(obj,roi,points)
+            % roi can be roi number or roi name from MRDataCine.roiList
+            myroi = getROI(obj,roi);
+            myroi.pointsMan = points;
+        end
+        
+        function mymask = getRoiMask(obj,roi)
+            % val can be roi number or roi name from MRDataCine.roiList
+            myroi = getROI(obj,roi);
+            mymask = myroi.getMask(size(obj.dataRaw));
+        end
+        
         function myoMask = getMyoMask(obj)
-            epiMask  = obj.epi.getMask(size(obj.dataRaw));
-            endoMask = obj.endo.getMask(size(obj.dataRaw));
+%             epiMask  = obj.epi.getMask(size(obj.dataRaw));
+%             endoMask = obj.endo.getMask(size(obj.dataRaw));
+            epiMask = obj.getRoiMask('epi');
+            endoMask = obj.getRoiMask('endo');
             myoMask = epiMask & ~endoMask;
         end
         
@@ -153,6 +193,7 @@ classdef MRDataCINE < MRData
         % provide class name (by calling mfilename) to MRData load method
         function obj = load(mypath)
             obj = load@MRData(mypath,mfilename);
+            obj.dispField.loadPath = obj.getFullLoadPath;
         end
     end
     

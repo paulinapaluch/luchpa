@@ -1,15 +1,14 @@
 clear
 close all
+%mainMatDir = '/Volumes/Seagate/MAT/unitTesting/Miccai2009';
 mainMatDir = '/Volumes/My Passport/MAT/unitTesting/Miccai2009';
-temp = dir(mainMatDir);
-names = {temp.name}';
+temp = dir(mainMatDir); names = {temp.name}';names(ismember(names,{'.','..'}))=[];
 istudy = randi(length(names),1);
-disp(names{istudy})
 mypath = fullfile(mainMatDir,names{istudy},'NonameStudy');
 
 M = MRDataCINE.load(mypath);
 M.data;
-close all,V = MRV(M); V.setOverVolume(M.autoSegMask);V.backRange=[0,V.backRange(2)/3];V.overMap = hsv;V.alpha = .8; V.maskRange=[0 .5];
+close all,V = MRV(M); V.setOverVolume(M.autoSegMask);V.backRange=[0,V.backRange(2)/3];V.overMap = hsv;V.alpha = .8; V.maskRange=[0 .5];V.updateImages
 % M.calcbreathingCorrection
 % %%
 % M.epi  = MRRoi(M.nSlices,M.nTimes,'Epi','green');

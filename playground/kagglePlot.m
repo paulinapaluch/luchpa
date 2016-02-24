@@ -20,7 +20,7 @@ temp = repmat(M.data(:,:,s,1)./max(M.data(:))*4,[1,1,3]);
 temp(:,:,2) = temp(:,:,2).*~M.autoSegMask(:,:,s,1);
 temp(:,:,3) = temp(:,:,2).*~M.autoSegMask(:,:,s,1); 
 imshow(temp),title('First')
-hold on, plot(regs.Centroid(1),regs.Centroid(2),'gx'),hold off
+if ~isempty(regs),hold on, plot(regs.Centroid(1),regs.Centroid(2),'gx'),hold off;end
 
 subplot(243)
 temp = repmat(M.data(:,:,s,tDia)./max(M.data(:))*4,[1,1,3]);

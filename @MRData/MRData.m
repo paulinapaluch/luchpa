@@ -7,15 +7,16 @@ classdef (Abstract) MRData < handle
     
     properties (Abstract, Constant)
         className
-        numClassName
     end
     
-    properties (GetAccess = public, SetAccess = protected, Transient) % not saved, should be recalculated on load
+    properties (GetAccess = public, SetAccess = protected, Hidden = true, Transient) 
+        % not saved, should be recalculated on load
+        % hidden, dont want recalculation in every 'disp' calling
         data     = [];  % modified, currently used data. Modified for example for breathing motion corrected
         dataIso  = [];  % istropic data calculated based on data
     end
     
-    properties (GetAccess = public, SetAccess = protected)
+    properties (GetAccess = public, SetAccess = protected, Hidden = true)
         % core properties
         dataRaw  = [];  % data from dicoms
         dcmTags  = [];  % dicoms tags, kept here in case they are needed one day

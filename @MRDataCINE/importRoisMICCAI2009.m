@@ -21,17 +21,20 @@ try
                 
                 %endo
                 if ~isempty(strfind(allfiles(iDir).name,'icontour'))
-                    obj.endo.pointsMan{s,t} = temp;
+                    obj.getROI('endo').pointsMan{s,t} = temp;
+                    %obj.endo.pointsMan{s,t} = temp;
                 end
+                
                 %epi
                 if ~isempty(strfind(allfiles(iDir).name,'ocontour'))
-                    obj.epi.pointsMan{s,t} = temp;
+                    obj.getROI('epi').pointsMan{s,t} = temp;
+                    %obj.epi.pointsMan{s,t} = temp;
                 end
             end
         end
     end
-    howmanyendos=sum(~cellfun(@isempty,obj.endo.pointsMan));
-    howmanyepis=sum(~cellfun(@isempty,obj.epi.pointsMan));
+    howmanyendos=sum(~cellfun(@isempty,obj.getROI('endo').pointsMan));
+    howmanyepis=sum(~cellfun(@isempty,obj.getROI('epi').pointsMan));
     endosIDX = find(howmanyendos);
     episIDX = find(howmanyepis);
     if length(endosIDX)==2 && length(episIDX)==1

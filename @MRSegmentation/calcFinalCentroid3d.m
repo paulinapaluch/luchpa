@@ -54,7 +54,7 @@ maskedDataS=data(:,:,s,1).*maskCirc(:,:,s);
 maskedDataSvec = maskedDataS(find(maskedDataS));
 obj = fitgmdist(maskedDataSvec,3);
 mus = sort(obj.mu);
-threshold = (mus(1)+mus(2))/2;
+threshold = (mus(2)+mus(3))/2;
 %[maxmu,idxmaxmu] = max(obj.mu);
 %sigma = obj.Sigma(1,1,idxmaxmu);
 %threshold = maxmu*.5;
@@ -125,7 +125,7 @@ if ~isempty(regs)
     myenergy = 2*distn + .5*regsEccen + .5*areaFun(regsArea,minArea,maxArea);
     [~,idx] = min(myenergy);
     
-    if regsArea(idx)>maxArea || regsArea(idx)<minArea
+    if regsArea(idx)>maxArea %|| regsArea(idx)<minArea
         return
     end
     

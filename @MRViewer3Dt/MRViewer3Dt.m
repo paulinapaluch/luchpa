@@ -23,6 +23,7 @@ classdef MRViewer3Dt < handle
     end
     properties (SetAccess = protected, Hidden = true)
         volumeSize   = [];                                      % size of the volume
+        flags        = [];
     end
     properties (SetAccess = private, Hidden = true)             % These properties are private.
         currentPoint = [];                                      % current point shown
@@ -34,7 +35,6 @@ classdef MRViewer3Dt < handle
         cursHandles  = [];                                      % handles to the cursor tool tips
         textHandles  = [];
         colorBarFig  = [];                                      % handle to the optional colorbar figure
-        
     end
     
     methods(Static)
@@ -47,6 +47,7 @@ classdef MRViewer3Dt < handle
         end
         
         function figureKey(~,evnt,obj)                          % When the keyboard is used in one of the figures.
+            if ~obj.flags.controls,return,end
             switch evnt.Key
                 case {'rightarrow'}                             % right - next time
                     obj.currentTime = mod(obj.currentTime,obj.volumeSize(4))+1;
@@ -62,6 +63,7 @@ classdef MRViewer3Dt < handle
         end
         
         function figureClick(~,~,obj)% When the keyboard is used in one of the figures.
+            if ~obj.flags.controls,return,end
             ax = gca;
             CP = obj.currentPoint;                              % The current coordinates.
             VS = obj.volumeSize;                                % The size of the volume.
@@ -162,6 +164,7 @@ classdef MRViewer3Dt < handle
     
     methods
         function obj = MRViewer3Dt(backVol,overVol,varargin)    % Initial start of this function, show the images, provide the class handle.
+            obj.flags.controls = 1;
             if nargin==1, overVol = []; end                     % Only one input variable? -> overVol is empty.
             if isscalar(backVol)                                % If the provided input is not an image, but a scalar.
                 error('Images should be 2- or 3-Dimensional');  % Error.

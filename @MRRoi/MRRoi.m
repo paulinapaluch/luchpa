@@ -10,6 +10,7 @@ classdef MRRoi < handle % matlab.mixin.SetGet
         pointsMan
         pointsAut
         autMethod = '';
+        type = 'cpoly'; % 'point', 'cpoly'
     end
     
     properties (SetAccess = private, Hidden = true)
@@ -23,11 +24,12 @@ classdef MRRoi < handle % matlab.mixin.SetGet
             if nargin>2, R.name = varargin{1};end
             if nargin>3, R.color = varargin{2};end
             if nargin>4, error('Too many input args');end
+
+            R.nSlices = nSlices;
+            R.nTimes = nTimes;
             
             R.pointsMan = cell(nSlices,nTimes);
             R.pointsAut = cell(nSlices,nTimes);
-            R.nSlices = nSlices;
-            R.nTimes = nTimes;
         end
         
         function set.name(R,val)
@@ -38,18 +40,22 @@ classdef MRRoi < handle % matlab.mixin.SetGet
         end
         
         function set.pointsMan(R,val)
-% following is not working with indexes, fe R.epi.pointsMan{3,3}=0; Try subsasgn
-%             if ~isa(val,'cell') || all(size(val)==size(R.pointsMan))
-%                 error('Points has to be in cell with certain size - cell(nSlices,nTimes)');
-%             end
+            if ~isa(val,'cell')
+                error('Points should be in a cell')
+            end
+            if ~isempty(R.pointsMan) && ~all(size(val)==size(R.pointsMan))
+                error('Points has to be in cell with certain size: cell(nSlices,nTimes)')
+            end
             R.pointsMan = val;
         end
         
         function set.pointsAut(R,val)
-% following is not working with indexes, fe R.epi.pointsMan{3,3}=0; Try subsasgn
-%             if ~isa(val,'cell') || all(size(val)==size(R.pointsAut))
-%                 error('Points has to be in cell with certain size - cell(nSlices,nTimes)');
-%             end
+            if ~isa(val,'cell')
+                error('Points should be in a cell')
+            end
+            if ~isempty(R.pointsAut) && ~all(size(val)==size(R.pointsAut))
+                error('Points has to be in cell with certain size: cell(nSlices,nTimes)')
+            end
             R.pointsAut = val;
         end
         
