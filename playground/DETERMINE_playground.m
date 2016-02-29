@@ -11,8 +11,8 @@ switch user
         dcmDir = '';
         matDir = '';
     case 'konrad'
-        dcmDir = '/Volumes/My Passport/DCM/DETERMINE/IMAGES';
-        matDir = '/Volumes/My Passport/MAT/DETERMINE';
+        dcmDir = '/Volumes/Seagate/DCM/DETERMINE/IMAGES';
+        matDir = '/Volumes/Seagate/MAT/DETERMINE';
 end
 
 load('DETERMINEmassGT.mat')
@@ -49,16 +49,15 @@ nameSeries{29} = {'DET0002901','SeriesNumber',{1801}};
 
 
 %% GET DATA FROM DICOMS
-for iname=3%find(~cellfun(@isempty,nameSeries))
+for iname=1%find(~cellfun(@isempty,nameSeries))
     dcmDir_temp = fullfile(dcmDir,nameSeries{iname}{1});
     matDir_temp = fullfile(matDir);
     
-    disp(dcmDir_temp)
     M = MRDataLGE(dcmDir_temp,matDir_temp,nameSeries{iname}{2},nameSeries{iname}{3});
 end
 
 %% CALCULATE SCAR
-for iname=16%find(~cellfun(@isempty,nameSeries))
+for iname=1%find(~cellfun(@isempty,nameSeries))
     mypath = fullfile(matDir,nameSeries{iname}{1},'NonameStudy');
     M = MRDataLGE.load(mypath);
     M.data;
@@ -68,20 +67,20 @@ for iname=16%find(~cellfun(@isempty,nameSeries))
     %keyboard
 end
 
-%% CALCULATE SCAR2
-for iname=find(~cellfun(@isempty,nameSeries))
-    mypath = fullfile(matDir,nameSeries{iname}{1},'NonameStudy');
-    M = MRDataLGE.load(mypath);
-    M.data;
-    M.calcScar;
-    scarVolume(iname) = M.scarMass;
-end
-%
-figure
-labels.title = 'LGE';
-labels.x = 'Determine ground truth';
-labels.y = 'KW';
-options.parametric = 1;
-options.markersize = 10;
-scarVolume(scarVolume==0)=nan;
-myscatter(DETERMINEmassGT,scarVolume','scatter',labels,options)
+% %% CALCULATE SCAR2
+% for iname=find(~cellfun(@isempty,nameSeries))
+%     mypath = fullfile(matDir,nameSeries{iname}{1},'NonameStudy');
+%     M = MRDataLGE.load(mypath);
+%     M.data;
+%     M.calcScar;
+%     scarVolume(iname) = M.scarMass;
+% end
+% %
+% figure
+% labels.title = 'LGE';
+% labels.x = 'Determine ground truth';
+% labels.y = 'KW';
+% options.parametric = 1;
+% options.markersize = 10;
+% scarVolume(scarVolume==0)=nan;
+% myscatter(DETERMINEmassGT,scarVolume','scatter',labels,options)

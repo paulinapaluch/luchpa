@@ -5,28 +5,43 @@ classdef MRDataLGE < MRData
     properties (Constant)
         % this is visible from class, >> MRDispField.allowedImages
         className   = 'MRDataLGE';
-        numClassName = 'masks';
         
-        allowedImages = {...   % working on MRDataCINE object, fe. M.(allowedImages(1,1))
-            'data',   'Data with corrections','useAspectRatio';...
-            'dataRaw','Data from dicom','useAspectRatio';...
-            'dataIso','Data with corrections isotropic (interpolated)',''};
-        allowedOverlays = {... 
-            'empty',  'None',  1;...
-            'scar',  'Scar',   1};
+        roiList = {...
+            'endo',     'red',      'cpoly';...
+            'epi',      'green',    'cpoly';...
+            'healthy',  'magenta',  'cpoly';...
+            'scar',     'cyan',     'point';...
+            };
+        
     end
     
     properties
-        epi          = [];      % epicardial MRRoi object
-        endo         = [];      % endocardial MRRoi object
-        myoMask      = [];
-        masks        = [];
+        rois         = [];
+        emptyMask    = [];
+        scarMask     = [];
         scarMass     = [];
         qmassInFile  = [];      % in case qmass import is needed
         qmassOutFile = [];      % in case qmass export is needed
     end
     
     methods
+        function ai = allowedImages(self)
+            ai = {...
+                g(@self.data),   'Corrected data',          'useAspectRatio';...
+                g(@self.dataRaw),'Data from dicom',         'useAspectRatio';...
+                g(@self.dataIso),'Corrected data isotropic',''              ;...
+                };
+        end
+        
+        function ao = allowedOverlays(self)
+            % % I think I should add 'mother data' to allowed overlays. backDF
+            % % calculated on dataRaw should not be used on shifted data
+            ao = {...
+                g(@self.infarctMask), 'Empty', 1        ;...
+                g(@self.scarMask), 'Thresholded', 1  ;...
+                };
+        end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%% ---------------------- CONSTRUCTOR ---------------------- %%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,9 +53,9 @@ classdef MRDataLGE < MRData
                 if iscell(varargin{1})  % from dicom dirs cell
                     disp(varargin{1})
                     obj = getLGEDataFromSeriesCell(obj,varargin{1});
-%                 elseif exist(varargin{1},'dir') % from one dicom dir
-%                     disp(varargin{1})
-%                     obj = getCineDataFromStudyDir(obj,varargin{1});
+                    %                 elseif exist(varargin{1},'dir') % from one dicom dir
+                    %                     disp(varargin{1})
+                    %                     obj = getCineDataFromStudyDir(obj,varargin{1});
                 end
             elseif nargin==4 % from one dicom dir with conditions
                 disp(varargin{1})
@@ -52,16 +67,42 @@ classdef MRDataLGE < MRData
             end
             getObjParamsFromDcmTags(obj);
             obj.calcSliceDistances;
-            obj.epi  = MRRoi(obj.nSlices,obj.nTimes,'Epi','green');
-            obj.endo = MRRoi(obj.nSlices,obj.nTimes,'Endo','red');
-            obj.masks.empty = [];
-            obj.masks.scar = ones(size(obj.dataRaw));
+            obj.emptyMask = [];
+            obj.scarMask = ones(size(obj.dataRaw));
+            obj.initRois;
             obj.dupaSave;
         end
         
-        function myoMask = get.myoMask(obj)
-            epiMask  = obj.epi.getMask(size(obj.dataRaw));
-            endoMask = obj.endo.getMask(size(obj.dataRaw));
+        function initRois(obj)
+            %%% ready the rois
+            rl = obj.roiList;
+            for iroi=1:size(rl,1)
+                temp(iroi) = MRRoi(obj.nSlices,obj.nTimes,rl{iroi,1},rl{iroi,2},rl{iroi,3});
+            end
+            obj.rois = temp;
+        end
+        
+        function myroi = getROI(obj,val)
+            % returns roi object
+            % val can be roi number or roi name from MRData.roiList
+            myroi = [];
+            if isnumeric(val) && length(val)==1
+                myroi = obj.rois(val);
+            elseif ischar(val)
+                idx = find(strcmp(obj.roiList(:,1),val),1,'first');
+                myroi = obj.rois(idx);
+            end
+        end
+        
+        function mymask = getRoiMask(obj,roi)
+            % val can be roi number or roi name from MRData.roiList
+            myroi = getROI(obj,roi);
+            mymask = myroi.getMask(size(obj.dataRaw));
+        end
+        
+        function myoMask = getMyoMask(obj)
+            epiMask = obj.getRoiMask('epi');
+            endoMask = obj.getRoiMask('endo');
             myoMask = epiMask & ~endoMask;
         end
         

@@ -1,8 +1,8 @@
 function obj = calcScar(obj)
 
-myoMask = obj.myoMask;
+myoMask = obj.getMyoMask;
 data = obj.data;
-maskScar = zeros(size(data));
+maskScar = false(size(data));
 
 idx = find(myoMask);
 mymax = max(data(idx));
@@ -15,7 +15,7 @@ if ~isempty(threshold)
     maskScar = (data>threshold).*myoMask;
 end
 
-obj.masks.scar = maskScar;
+obj.scarMask = maskScar;
 
 sd = obj.sliceDistances;
 sd = [sd(1) sd sd(end)];

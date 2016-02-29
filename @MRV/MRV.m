@@ -11,17 +11,17 @@ classdef MRV < MRViewer3Dt
     end
     
     properties (SetAccess = private, Hidden = true)             % These properties are private.
-        overDims        = [];
-        currentDim      = [];
-        currentBackIdx  =  1;
-        currentOverIdx  =  1;
-        currentOverDimIdx = [];
-        rois            = [];
-        roisManHandles  = [];
-        roisAutHandles  = [];
-        myoMask         = [];
-        shifts          = [];        % rois (epi and endo) are defined for the raw data. If there were corrections, shifts are needed
-        menuHandles     = [];
+        overDims            = [];
+        currentDim          = [];
+        currentBackIdx      =  1;
+        currentOverIdx      =  1;
+        currentOverDimIdx   = [];
+        rois                = [];
+        roisManHandles      = [];
+        roisAutHandles      = [];
+        myoMask             = [];
+        shifts              = [];        % rois (epi and endo) are defined for the raw data. If there were corrections, shifts are needed
+        menuHandles         = [];
     end
     
     methods
@@ -36,19 +36,19 @@ classdef MRV < MRViewer3Dt
             backVol = M.allowedImages{1,1}();
             overVol = [];
             overDims=0;
-%             if ~isempty(M.numClassName) && ~isempty(M.(M.numClassName))
-%                 temp = M.(M.numClassName).(M.allowedOverlays{1,1})(:,:,:,:,1);
-%                 if ~isempty(temp) && all(size(temp)==size(backVol)) 
-%                     overVol = temp;
-%                     overDims = M.allowedOverlays{1,3};
-%                 end
-%             end
+            %             if ~isempty(M.numClassName) && ~isempty(M.(M.numClassName))
+            %                 temp = M.(M.numClassName).(M.allowedOverlays{1,1})(:,:,:,:,1);
+            %                 if ~isempty(temp) && all(size(temp)==size(backVol))
+            %                     overVol = temp;
+            %                     overDims = M.allowedOverlays{1,3};
+            %                 end
+            %             end
             obj@MRViewer3Dt(backVol,overVol);
             obj.MRData = M;
             wc=M.dcmTags(1).WindowCenter;ww=M.dcmTags(1).WindowWidth;
             obj.setBackRange([wc-ww/2, wc+ww/2]);
             obj.setAspectRatio(M.aspectRatio);
-            obj.rois = obj.MRData.rois;
+            obj.rois = M.rois;
             obj.shifts = M.breathShifts;
             obj.overDims = overDims;
             obj.currentDim = 1;
@@ -99,14 +99,18 @@ classdef MRV < MRViewer3Dt
             if strcmp(ai{obj.currentBackIdx,1},'dataRaw')
                 set(h.over(2:end),'enable','off')
             end
-
+            
             h.manu=uimenu(obj.figHandle,'Label','Manual operations');
-            uimenu(h.manu,'Label','Draw endo','callback',{@obj.drawContour,'endo'},'Accelerator','1');
-            uimenu(h.manu,'Label','Draw epi','callback',{@obj.drawContour,'epi'},'Accelerator','2');
+            for iroi = 1:size(M.roiList,1)
+                roiname = M.roiList{iroi,1};
+                uimenu(h.manu,'Label',['Draw manual ',roiname],'callback',{@obj.drawRoi,roiname},'Accelerator',num2str(iroi));
+            end
             uimenu(h.manu,'Label','Define RVLV point(SA)/Axis(LA) (x)','callback',@defineCenterRVLV,'Separator','on');
-            uimenu(h.manu,'Label','Delete current endoMan','callback',{@obj.deleteOneContour,'endo'});
-            uimenu(h.manu,'Label','Delete current epiMan','callback',{@obj.deleteOneContour,'epi'});
-            uimenu(h.manu,'Label','Delete current','callback',@obj.deleteOneContour,'Accelerator','d');
+            for iroi = 1:size(M.roiList,1)
+                roiname = M.roiList{iroi,1};
+                uimenu(h.manu,'Label',['Delete current ',roiname],'callback',{@obj.deleteOneContour,roiname});
+            end
+            uimenu(h.manu,'Label','Delete current rois','callback',@obj.deleteOneContour,'Accelerator','d');
             uimenu(h.manu,'Label','Delete EVERYTHING','callback',{@obj.deleteAllCountours});
             h.mask=uimenu(obj.figHandle,'Label','Mask');
             uimenu(h.mask,'Label','Mask overlay volume','callback',{@obj.maskOnOff},'Checked','off');
@@ -132,7 +136,7 @@ classdef MRV < MRViewer3Dt
             if isnumeric(val) && length(val)==1
                 myroi = obj.rois(val);
             elseif ischar(val)
-                idx = find(strcmp(MRDataCINE.roiList(:,1),val),1,'first');
+                idx = find(strcmp(obj.MRData.roiList(:,1),val),1,'first');
                 myroi = obj.rois(idx);
             end
         end
@@ -143,8 +147,13 @@ classdef MRV < MRViewer3Dt
                 axes(obj.axesHandles(iax)); %#ok
                 hold on                                                 % Hold, to initialize rois
                 for iroi = 1:size(obj.rois,2)
-                    obj.roisManHandles(iroi,iax) = plot(0,0,'--','color',obj.getROI(iroi).color);
-                    obj.roisAutHandles(iroi,iax) = plot(0,0,'-', 'color',obj.getROI(iroi).color);
+                    if strcmp(obj.getROI(iroi).type,'point')
+                        obj.roisManHandles(iroi,iax) = plot(0,0,'x','color',obj.getROI(iroi).color);
+                        obj.roisAutHandles(iroi,iax) = plot(0,0,'o', 'color',obj.getROI(iroi).color);
+                    else
+                        obj.roisManHandles(iroi,iax) = plot(0,0,'--','color',obj.getROI(iroi).color);
+                        obj.roisAutHandles(iroi,iax) = plot(0,0,'-', 'color',obj.getROI(iroi).color);
+                    end
                 end
                 hold off
             end
@@ -170,7 +179,7 @@ classdef MRV < MRViewer3Dt
             for iroi = 1:size(obj.rois,2)
                 myroiManP = obj.getROI(iroi).pointsMan{sliceIdx,obj.currentTime};
                 myroiAutP = obj.getROI(iroi).pointsAut{sliceIdx,obj.currentTime};
-              
+                
                 %%% manual
                 if ~isempty(myroiManP)
                     set(obj.roisManHandles(iroi,3),'XData',[myroiManP(:,1);myroiManP(1,1)]-shift_temp(2))
@@ -191,7 +200,44 @@ classdef MRV < MRViewer3Dt
             end
         end
         
-        function drawContour(obj,varargin)
+        function drawCPoly(obj,myroi)
+            try
+                pos = myroi.pointsMan{obj.currentPoint(3),obj.currentTime};
+                h = impoly(obj.axesHandles(3),pos);
+                
+                if ~isempty(pos),wait(h);end
+                pos = h.getPosition;
+                pos(:,1)=pos(:,1)+obj.shifts(2);
+                pos(:,2)=pos(:,2)+obj.shifts(1);
+                myroi.pointsMan{obj.currentPoint(3),obj.currentTime} = pos;
+                delete(h)
+                updateImages(obj)
+            catch ex
+                obj.flags.controls = 1;
+                ex
+            end
+        end
+        
+        function drawPoint(obj,myroi)
+            try
+                pos = myroi.pointsMan{obj.currentPoint(3),obj.currentTime};
+                h = impoint(obj.axesHandles(3),pos);
+                
+                if ~isempty(pos),wait(h);end
+                pos = h.getPosition;
+                pos(:,1)=pos(:,1)+obj.shifts(2);
+                pos(:,2)=pos(:,2)+obj.shifts(1);
+                myroi.pointsMan{obj.currentPoint(3),obj.currentTime} = pos;
+                delete(h)
+                updateImages(obj)
+            catch ex
+                obj.flags.controls = 1;
+                ex
+            end
+        end
+        
+        
+        function drawRoi(obj,varargin)
             if all(obj.aspectRatio == [1 1 1])
                 disp('Not allowed on iso data')
                 return
@@ -199,19 +245,12 @@ classdef MRV < MRViewer3Dt
             obj.flags.controls = 0;
             obj.flags.hasChanged = 1;
             contName = varargin{3};
-            try
-                pos = obj.getROI(contName).pointsMan{obj.currentPoint(3),obj.currentTime};
-                h = impoly(obj.axesHandles(3),pos);
-                if ~isempty(pos),wait(h);end
-                pos = h.getPosition;
-                pos(:,1)=pos(:,1)+obj.shifts(2);
-                pos(:,2)=pos(:,2)+obj.shifts(1);
-                obj.getROI(contName).pointsMan{obj.currentPoint(3),obj.currentTime} = pos;
-                delete(h)
-                updateImages(obj)
-            catch ex
-                obj.flags.controls = 1;
-                ex
+            myroi = obj.getROI(contName);
+            switch myroi.type
+                case 'cpoly'
+                    drawCPoly(obj,myroi)
+                case 'point'
+                    drawPoint(obj,myroi)
             end
             obj.flags.controls = 1;
         end
@@ -221,7 +260,7 @@ classdef MRV < MRViewer3Dt
             endoMask = obj.endo.getMask(obj.volumeSize);
             myoMask = epiMask & ~endoMask;
         end
-            
+        
         function deleteOneContour(obj,varargin)
             if all(obj.aspectRatio == [1 1 1])
                 disp('Not allowed on iso data')
@@ -245,7 +284,7 @@ classdef MRV < MRViewer3Dt
             end
             updateImages(obj)
         end
-  
+        
         function obj = setBackVolumeCLB(obj,varargin)
             backIdx = varargin{3};
             M = obj.MRData;

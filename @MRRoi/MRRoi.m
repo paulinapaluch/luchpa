@@ -7,10 +7,11 @@ classdef MRRoi < handle % matlab.mixin.SetGet
     properties
         name  = 'ROI'
         color = [0 1 0]
+        type = 'cpoly'; % 'point', 'cpoly'
         pointsMan
         pointsAut
         autMethod = '';
-        type = 'cpoly'; % 'point', 'cpoly'
+        
     end
     
     properties (SetAccess = private, Hidden = true)
@@ -23,7 +24,8 @@ classdef MRRoi < handle % matlab.mixin.SetGet
             if nargin<2, error('Not enaugh input args');end
             if nargin>2, R.name = varargin{1};end
             if nargin>3, R.color = varargin{2};end
-            if nargin>4, error('Too many input args');end
+            if nargin>4, R.type = varargin{3};end
+            if nargin>5, error('Too many input args');end
 
             R.nSlices = nSlices;
             R.nTimes = nTimes;

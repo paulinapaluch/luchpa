@@ -17,8 +17,8 @@ classdef MRDataCINE < MRData
         % this is visible from class, >> MRDispField.roiList
         className   = 'MRDataCINE';
         roiList = {...
-            'epi',  'green';...
             'endo', 'red';...
+            'epi',  'green';...
             };
     end
     
@@ -86,14 +86,12 @@ classdef MRDataCINE < MRData
             obj.calcTimes;
             obj.dispField = MRDispField(obj);
             %%% ready the rois
-            rl = MRDataCINE.roiList;
-            
+            rl = obj.roiList;
             for iroi=1:size(rl,1)
                 temp(iroi) = MRRoi(obj.nSlices,obj.nTimes,rl{iroi,1},rl{iroi,2});
             end
             obj.rois = temp;
-%             obj.epi  = MRRoi(obj.nSlices,obj.nTimes,'Epi','green');
-%             obj.endo = MRRoi(obj.nSlices,obj.nTimes,'Endo','red');
+
             obj.dupaSave;
         end
         
@@ -136,12 +134,6 @@ classdef MRDataCINE < MRData
                 idx = find(strcmp(MRDataCINE.roiList(:,1),val),1,'first');
                 myroi = obj.rois(idx);
             end
-        end
-        
-        function setRoiPoints(obj,roi,points)
-            % roi can be roi number or roi name from MRDataCine.roiList
-            myroi = getROI(obj,roi);
-            myroi.pointsMan = points;
         end
         
         function mymask = getRoiMask(obj,roi)
