@@ -9,43 +9,47 @@ load(inFile)
 I1 = mrData(:,:,5,1);
 I2 = mrData(:,:,5,9);
 
-%%% playying with Spacing
-%myparam = 'SpacingInit';
-%vals = {[64 64]; [32 32]; [16 16]};
-%vals = {[8 8];[4 4];[2 2]};
+% BSPLINES
+dfopts=struct(...
+    'Similarity',[],...
+    'Registration','NonRigid',...
+    'Penalty',1e-3,...
+    'MaxRef',2,...
+    'Grid',[],...
+    'Spacing',[],...
+    'MaskMoving',[],...
+    'MaskStatic',[],...
+    'Verbose',2,...
+    'Points1',[],...
+    'Points2',[],...
+    'PStrength',[],...
+    'Interpolation','Linear',...
+    'Scaling',[1 1]);
+[Ireg0,O_trans0,Spacing0,M0,B0,F0] = image_registration(I1,I2,dfopts);
+[grid_tran_plot0,grid_init0]=correctGrid(O_trans0,Spacing0,I1);
 
-%%% playing with refinements
-myparam = 'nRef';
-vals = {4, 3, 2};
+myoptions = dfopts;
+myoptions.Spacing = [64 64];
+myoptions.MaxRef = 0;
 
+myparam = 'Spacing';
+vals = {[8 8]; [4 4]; [2 2]};
+% myparam = 'MaxRef';
+% vals = {5, 4, 3, 2};
 nvals = length(vals);
 
 for i = 1:nvals    
-    Reg = MRRegistration(I1,I2,myparam,vals{i});
-    Reg.Verbose = 1;
-    %Reg.nRef=1;
-    Reg.Penalty = 1e-3;
-    Reg.doDefRegistration;
-    Ireg(:,:,i) = Reg.Imt;
-    B(:,:,:,i) = Reg.B;
-    Spacing(i,:) = Reg.SpacingFin;
-    Grid{i} = Reg.BSGrid;
-    disp('#############')
-end
-%%
-for i = 1:nvals    
-    %grid_tran_plot{i} = Grid{i};
-    [grid_tran_plot{i},grid_init{i}]=correctGrid(Grid{i},Spacing(i,:),I1);
+    myoptions.(myparam)=vals{i};
+    [Ireg(:,:,i),O_trans{i},Spacing(i,:),~,B(:,:,:,i),F(:,:,:,i)] = image_registration(I1,I2,myoptions);
+    [grid_tran_plot{i},grid_init{i}]=correctGrid(O_trans{i},Spacing(i,:),I1);
 end
 %
 Bx_temp = reshape(B(:,:,1,:),[nX,nY*nvals]);
 By_temp = reshape(B(:,:,2,:),[nX,nY*nvals]);
 figure(1)
-imshow([Bx_temp;By_temp],[])
+imshow([B0(:,:,1),Bx_temp;B0(:,:,2),By_temp],[])
 title(vals)
 ylabel('x/y')
-
-%%
 % %% show pics
 % close all
 % myclim = [0 350];
@@ -247,10 +251,10 @@ hFig2=figure('position',[400 400 400 400],'Color',[1 1 1],'PaperPositionMode', '
 subplot('Position',[0 0 1 1]);
 imshow(I2,myclim)
 
-% hFig3=figure('position',[800 400 400 400],'Color',[1 1 1],'PaperPositionMode', 'auto');
-% subplot('Position',[0 0 1 1]);
-% imshow(Ireg0,myclim),hold on
-% plotGrid(grid_tran_plot0)
+hFig3=figure('position',[800 400 400 400],'Color',[1 1 1],'PaperPositionMode', 'auto');
+subplot('Position',[0 0 1 1]);
+imshow(Ireg0,myclim),hold on
+plotGrid(grid_tran_plot0)
 
 hFig4=figure('position',[0 0 400 400],'Color',[1 1 1],'PaperPositionMode', 'auto');
 subplot('Position',[0 0 1 1]);

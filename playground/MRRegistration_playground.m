@@ -6,7 +6,7 @@ Im(3:end,3:end)=Is(1:end-2,1:end-2);
 imshow([Is,Im],[])
 
 opts.Spacing = [8 8];
-opts.MaxRef = 0;
+opts.MaxRef = 1;
 opts.Verbose = 2;
 opts.Similarity = 'sd';
 opts.Registration = 'NonRigid';
@@ -18,7 +18,7 @@ R.doDefRegistration;
 
 %% Check if results are the same
 disp('##########')
-[~,grid] = image_registration(Is,Im,opts);
+[Ireg,grid] = image_registration(Is,Im,opts);
 
 %%
 myequal = R.BSGrid == grid;
@@ -26,6 +26,8 @@ any(myequal(:))
 
 clf
 subplot(121)
-plotGrid(R.BSGrid)
+imshow(R.Imt,[]),hold on
+plotGrid(correctGrid(R.BSGrid,R.SpacingFin,Im)),hold off,title('KW')
 subplot(122)
-plotGrid(grid)
+imshow(Ireg,[]),hold on
+plotGrid(correctGrid(grid,R.SpacingFin,Im)),hold off,title('DJK')

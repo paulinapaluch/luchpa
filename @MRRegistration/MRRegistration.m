@@ -46,6 +46,7 @@ classdef MRRegistration <  matlab.mixin.SetGet
         DispField   = [];
         SpacingFin  = []; % Output spacing
         BSGrid      = []; % Output grid
+        dupa = [];
     end
     
     methods
@@ -109,7 +110,7 @@ classdef MRRegistration <  matlab.mixin.SetGet
             p.addParameter('Penalty', obj.Penalty, @isnumeric);
             p.addParameter('Verbose', obj.Verbose, @(x) isinteger(x) & x>=0 & x<3);
             p.addParameter('SpacingInit', obj.calcSpacingInit, @(x) isnumeric(x) & length(x)==obj.Dims & all(mod(log2(x),1)==0) & all(x>0)); % is numeric; is of power of 2; is bigger then 0; size == nDims
-            p.addParameter('nRef', obj.calcMaxNRef-2, @(x) isnumeric(x) & x>=0); % -2, cause usually there is no need for registration with [1 1] nad [2 2] spacing
+            p.addParameter('nRef', [], @(x) isnumeric(x) & x>=0); % -2, cause usually there is no need for registration with [1 1] nad [2 2] spacing
             p.addParameter('BSGrid', obj.BSGrid,@isnumeric); % TODO check sizes & calculate initial grid
             p.addParameter('MaskMoving', obj.MaskMoving, @(x) all(size(x)==size(obj.Im)));
             p.addParameter('MaskStatic', obj.MaskStatic, @(x) all(size(x)==size(obj.Is)));
@@ -123,15 +124,30 @@ classdef MRRegistration <  matlab.mixin.SetGet
                 obj.(fn{i}) = p.Results.(fn{i});
             end
             %%% nRef is checked after SpacingInit is calculated
-            obj.checkNRef;
+            if isempty(obj.nRef),obj.nRef = obj.calcMaxNRefSpacing;
+            else obj.checkNRef;
+            end
+            
+            if(obj.Verbose>0), 
+                fprintf('Similarity: %s. ', obj.Similarity); 
+                fprintf('Initial spacing: [%s]. ', num2str(obj.SpacingInit))
+                fprintf('Number of refinements: %d.\n', obj.nRef)
+                drawnow; 
+            end
         end
         
-        function maxNRef = calcMaxNRef(obj)
+        function maxNRef = calcMaxNRefImage(obj)
             maxNRef = min(floor(log2(size(obj.Im)/4)));
         end
         
+        function maxNRef = calcMaxNRefSpacing(obj)
+            % -2, cause usually there is no need for registration with [1 1] nad [2 2] spacing
+            maxNRef = max( 0, min(log2(obj.SpacingInit))-2 );
+            
+        end
+        
         function SpacingInit = calcSpacingInit(obj)
-            maxNRef = calcMaxNRef(obj);
+            maxNRef = calcMaxNRefImage(obj);
             SpacingInit = ones(1,obj.Dims);
             SpacingInit = SpacingInit .* 2^maxNRef;
         end
@@ -152,10 +168,8 @@ classdef MRRegistration <  matlab.mixin.SetGet
             Hstatic = hist(obj.Is(:),(1/60)*[0.5:60])./numel(obj.Is);
             if(sum(abs(Hmoving(:)-Hstatic(:)))>0.25),
                 type = 'mi';
-                if(obj.Verbose>0), disp('Multi Modalities, Mutual information is used'); drawnow; end
             else
                 type = 'sd';
-                if(obj.Verbose>0), disp('Same Modalities, Pixel Distance is used'); drawnow; end
             end
         end
         
@@ -173,7 +187,8 @@ classdef MRRegistration <  matlab.mixin.SetGet
         end
         
         function doDefRegistration(obj)
-            if(obj.Verbose>0), disp('Start non-rigid b-spline grid registration'); drawnow; end
+            mytic = tic;
+            if(obj.Verbose>0), fprintf('Start non-rigid b-spline grid registration. '); drawnow; end
             
             % set registration options (used in bspline_registration_gradient)
             options.type = obj.Similarity;
@@ -187,7 +202,7 @@ classdef MRRegistration <  matlab.mixin.SetGet
             Spacing = obj.SpacingInit;
             optim = obj.optimPars;
             
-            if(obj.Verbose>0), optim.Display='iter'; end
+            if(obj.Verbose>1), optim.Display='iter'; end
             
             % Enable forward instead of central gradient incase of error measure is pixel distance
             if(strcmpi(obj.Similarity,'sd')), options.centralgrad=false; end 
@@ -200,11 +215,11 @@ classdef MRRegistration <  matlab.mixin.SetGet
                 % Refine the b-spline grid
                 if iIter>1 % no refinement in first iteration
                     [O_trans,Spacing] = refine_grid(O_trans,Spacing,size(obj.Imn));
-                    if(obj.Verbose>0), disp('Grid refinement'); drawnow; end
+                    if(obj.Verbose>0), fprintf('\nGrid refinement. '); drawnow; end
                 end
                 
                 % display
-                if(obj.Verbose>0), disp(['Current Grid size: ',num2str(size(O_trans)),' SpacingInit: ',num2str(Spacing)]); drawnow; end
+                if(obj.Verbose>0), fprintf('Current Grid size: [%s]. Current Spacing: [%s]. ',num2str(size(O_trans)),num2str(Spacing)); drawnow; end
                 
                 % Make smooth images for fast registration without local minimums
                 % here because we use the grid size for calculation of
@@ -214,7 +229,7 @@ classdef MRRegistration <  matlab.mixin.SetGet
                 % Uncomment following line to repeat an error in DJK code. 
                 % Smoothing kernel in first iteration is calculated based 
                 % on wrong BSGrid size O_trans(:)
-                if iIter==1, [ISmoving,ISstatic] = obj.smoothImages(obj.Imn,obj.Isn,O_trans(:)); end
+                %if iIter==1, [ISmoving,ISstatic] = obj.smoothImages(obj.Imn,obj.Isn,O_trans(:)); end
                 
                 % calc scale
                 resize_per = 2^(nIters-iIter-1); % on last level it is .5, but it is handled below
@@ -226,6 +241,7 @@ classdef MRRegistration <  matlab.mixin.SetGet
                     resize_per = 1; 
                     if (obj.Dims==3),optim.TolX = 0.05;  
                     else             optim.TolX = 0.03; end
+                    if(obj.Verbose>0), fprintf('Last iteration, no smoothing.\n'),drawnow; end
                 end
 
                 % Resize everything, apply scale
@@ -236,8 +252,6 @@ classdef MRRegistration <  matlab.mixin.SetGet
 
                 % Reshape BSGrid from a matrix to a vector.
                 sizes = size(O_trans); O_trans = O_trans(:);
-                
-                options
                 
                 % THE CORE PART
                 O_trans = resize_per * fminlbfgs(...
@@ -252,13 +266,13 @@ classdef MRRegistration <  matlab.mixin.SetGet
             obj.BSGrid = O_trans;
             obj.SpacingFin = Spacing;
             [obj.Imt,obj.B]=bspline_transform(O_trans,obj.Im,Spacing,3);
+            if(obj.Verbose>0), fprintf('Calculated in: %.2f seconds. Last spacing: [%s].\n',toc(mytic),num2str(Spacing));end
         end
     end
     
     methods (Static)
         
         function [ISmoving,ISstatic] = smoothImages(Imoving,Istatic,BSGrid)
-            try
             if size(BSGrid,3)==3 % 3d
                 Hsize=ceil(0.1667*(size(Istatic,1)/size(BSGrid,1)+size(Istatic,2)/size(BSGrid,2)+size(Istatic,3)/size(BSGrid,3)));
                 ISmoving=imgaussian(Imoving,Hsize/5,[Hsize Hsize Hsize]);
@@ -268,9 +282,6 @@ classdef MRRegistration <  matlab.mixin.SetGet
                 ISmoving=imfilter(Imoving,fspecial('gaussian',[Hsize Hsize],Hsize/5));
                 ISstatic=imfilter(Istatic,fspecial('gaussian',[Hsize Hsize],Hsize/5));
             end
-                    catch
-            disp('a')
-        end
         end
 
         function [ISmoving_small,ISstatic_small,MASKmovingsmall,MASKstaticsmall,...

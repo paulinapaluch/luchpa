@@ -8,9 +8,9 @@ function plotGrid(grid)
 
 hold on
 for ix=1:size(grid,1)
-    plot(grid(:,ix,1),grid(:,ix,2))
+    plot(grid(:,ix,2),grid(:,ix,1))
 end
 for iy=1:size(grid,2)
-    plot(grid(iy,:,1),grid(iy,:,2))
+    plot(grid(iy,:,2),grid(iy,:,1))
 end
 hold off
